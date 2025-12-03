@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import { sendWelcomeEmail } from "../utils/emailService.js";
 import { generateToken } from "../utils/generateToken.js";
 import { ApiResponse } from "../utils/ResponseHandler.js";
 
@@ -29,6 +30,13 @@ export const register = async (req, res, next) => {
     // Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
+
+    try {
+      await sendWelcomeEmail(user);
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+      // Don't fail registration if email fails
+    }
 
     res
       .status(201)
