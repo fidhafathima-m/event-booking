@@ -10,20 +10,14 @@ export const protect = async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      // get token
       token = req.headers.authorizaton.split(" ")[1];
 
-      // verify token
       const decoded = jwt.decode(token, process.env.JWT_SECRET);
 
-      // get user with that token
       req.user = await User.findById(decoded.id).select("-password");
 
       if (!req.user) {
-        res.status(400).json({
-          success: false,
-          message: "User not found",
-        });
+        res.status(400).json({ success: false, message: "User not found" });
       }
       next();
     } catch (err) {
@@ -54,7 +48,7 @@ export const authorize = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `User role ${req.user.role} is not authorized to access this route`
+        message: `User role ${req.user.role} is not authorized to access this route`,
       });
     }
 
@@ -66,17 +60,16 @@ export const isProvider = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Not authorized'
+      message: "Not authorized",
     });
   }
 
-  if (req.user.role !== 'provider' && req.user.role !== 'admin') {
+  if (req.user.role !== "provider" && req.user.role !== "admin") {
     return res.status(403).json({
       success: false,
-      message: 'Only service providers can access this route'
+      message: "Only service providers can access this route",
     });
   }
 
   next();
 };
-

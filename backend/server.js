@@ -7,14 +7,14 @@ dotenv.config();
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
+let server;
 mongoose
   .connect(MONGODB_URI)
   .then(() => {
     console.log("MongoDB connected successfully!");
 
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`Server running on PORT ${PORT}`);
-      console.log(`API Documentation: http://localhost:${PORT}/api-docs`);
     });
   })
   .catch((err) => {
@@ -22,9 +22,9 @@ mongoose
     process.exit(1);
   });
 
-// Handle unhandled promise rejections
+// handle rejections
 process.on("unhandledRejection", (err) => {
   console.error("Unhandled Rejection:", err);
-  // Close server & exit process
-  server.close(() => process.exit(1));
+  if (server) server.close(() => process.exit(1));
 });
+

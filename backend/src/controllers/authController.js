@@ -31,12 +31,9 @@ export const register = async (req, res, next) => {
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    try {
-      await sendWelcomeEmail(user);
-    } catch (emailError) {
+    sendWelcomeEmail(user).catch((emailError) => {
       console.error("Failed to send welcome email:", emailError);
-      // Don't fail registration if email fails
-    }
+    });
 
     res
       .status(201)
@@ -57,15 +54,15 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     // check for user email
-    const user = await User.findOne({ email }).select("-password");
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      res.status(401).json(ApiResponse.error("Invalid credentials", 401));
+      return res.status(401).json(ApiResponse.error("Invalid credentials", 401));
     }
 
     // check password
     const isMatchPassword = await user.comparePassword(password);
     if (!isMatchPassword) {
-      res.status(401).json(ApiResponse.error("Password not match", 401));
+      return res.status(401).json(ApiResponse.error("Password not match", 401));
     }
 
     // generate token

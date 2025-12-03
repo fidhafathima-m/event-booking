@@ -1,5 +1,5 @@
-import Service from "../models/Service";
-import Booking from "../models/Booking";
+import Service from "../models/Service.js";
+import Booking from "../models/Booking.js";
 
 export const createBooking = async (req, res, next) => {
   try {

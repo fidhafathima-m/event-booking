@@ -1,5 +1,4 @@
 import express from "express";
-import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
@@ -8,21 +7,23 @@ dotenv.config();
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import serviceRoutes from './routes/serviceRoutes.js'
+import bookingRoutes from "./routes/bookingRoutes.js"
+import adminRoutes from "./routes/adminRoutes.js"
 
 // Routes
 
 const app = express();
-
-// Security middleware
-app.use(helmet());
 
 // CORS Config.
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 // Rate limiting
 const limiter = rateLimit({
@@ -30,7 +31,7 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 request
 });
 
-app.use("/api/", limiter);
+// app.use("/api/", limiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -54,6 +55,8 @@ app.get('/health', (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 Handler
 app.use((req, res) => {

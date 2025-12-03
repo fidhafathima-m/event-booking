@@ -1,6 +1,6 @@
-import Booking from "../models/Booking";
-import Service from "../models/Service";
-import User from "../models/User";
+import Booking from "../models/Booking.js";
+import Service from "../models/Service.js";
+import User from "../models/User.js";
 
 export const getPlatformStats = async (req, res, next) => {
   try {

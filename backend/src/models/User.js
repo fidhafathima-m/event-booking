@@ -7,22 +7,22 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Email is required"],
       unique: true,
-      lowerCase: true,
+      lowercase: true, 
       trim: true,
       match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/,
         "Please enter a valid email",
       ],
     },
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [6, "Passwords should be atleast 6 characters"],
+      minlength: [6, "Password should be at least 6 characters"],
       select: false,
     },
     name: {
       type: String,
-      required: [true, "Name is required"],
+      required: true,
       trim: true,
     },
     phone: {
@@ -42,28 +42,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
     timestamps: true,
   }
 );
 
-// Hash password before saving
+// Hash password ONLY if changed
 userSchema.pre("save", async function (next) {
-  // only hash if pass is modified
   if (!this.isModified("password")) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
-    // hash pass
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (err) {
@@ -71,17 +61,21 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// compare pass
-userSchema.methods.comparePassword = async function (candidPass) {
-  return await bcrypt.compare(candidPass, this.password);
-};
+// Fix findOneAndUpdate so it doesn’t destroy password
+userSchema.pre("findOneAndUpdate", async function (next) {
+  const update = this.getUpdate();
 
-// updatetimestamp
-userSchema.pre("findOneAndUpdate", function (next) {
-  this.set({ updatedAt: Date.now() });
+  // if password is being updated, hash it
+  if (update.password) {
+    const salt = await bcrypt.genSalt(10);
+    update.password = await bcrypt.hash(update.password, salt);
+  }
+
   next();
 });
 
-const User = mongoose.model("User", userSchema);
+userSchema.methods.comparePassword = async function (candidatePass) {
+  return bcrypt.compare(candidatePass, this.password);
+};
 
-export default User;
+export default mongoose.model("User", userSchema);

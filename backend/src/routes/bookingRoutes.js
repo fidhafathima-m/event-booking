@@ -1,14 +1,14 @@
 import express from "express";
 import { body } from "express-validator";
-import protect from "../middlewares/auth";
-import validateRequest from "../utils/validation";
+import { protect, authorize } from "../middlewares/auth.js";
+import { validateRequest } from "../utils/validation.js";
 import {
   createBooking,
   getAllBookings,
   getBookingStats,
   getUpcomingBookings,
   updateBookingStatus,
-} from "../controllers/bookingController";
+} from "../controllers/bookingController.js";
 const router = express.Router();
 
 // Validation rules
@@ -56,4 +56,4 @@ router.put(
   updateBookingStatus
 );
 
-module.exports = router;
+export default router

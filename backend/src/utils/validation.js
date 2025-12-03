@@ -10,4 +10,6 @@ export const validateRequest = (req, res, next) => {
             errors: errors.array()
         })
     }
+
+    next();
 }
