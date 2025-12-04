@@ -6,7 +6,9 @@ import {
   login,
   logout,
   register,
+  resendOTPController,
   updateProfile,
+  verifyOTPController,
 } from "../controllers/authController.js";
 import { protect } from "../middlewares/auth.js";
 const router = express.Router();
@@ -35,6 +37,8 @@ const loginValidation = [
 
 // Routes
 router.post("/register", registerValidation, validateRequest, register);
+router.post('/verify-otp', verifyOTPController);
+router.post('/resend-otp', resendOTPController);
 router.post("/login", loginValidation, validateRequest, login);
 router.get("/me", protect, getMe);
 router.put("/update-profile", protect, updateProfile);

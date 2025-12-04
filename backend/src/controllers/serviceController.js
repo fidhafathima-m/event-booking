@@ -1,5 +1,6 @@
 import Booking from "../models/Booking.js";
 import Service from "../models/Service.js";
+import {ApiResponse} from "../utils/responseHandler.js"
 
 // Helper function to build filter query
 const buildFilterQuery = (queryParams) => {
@@ -66,7 +67,7 @@ export const getServices = async (req, res, next) => {
     const {
       page = 1,
       limit = 10,
-      sortBy = "createdAt",
+      sort = "createdAt",
       order = "desc",
       ...filters
     } = req.query;
@@ -125,7 +126,7 @@ export const getServiceById = async (req, res, next) => {
     let next30Days = new Date();
     next30Days.setDate(next30Days.getDate() + 30);
 
-    const availability = new Booking.find({
+    const availability = await Booking.find({
       service: id,
       status: { $in: ["confirmed", "pending"] },
       "bookingDates.endDate": { $gte: new Date() },

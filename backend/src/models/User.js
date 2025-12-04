@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "provider"],
+      enum: ["user", "admin"],
       default: "user",
     },
     isEmailVerified: {
@@ -61,7 +61,7 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Fix findOneAndUpdate so it doesn’t destroy password
+// Fix findOneAndUpdate so it doesn't destroy password
 userSchema.pre("findOneAndUpdate", async function (next) {
   const update = this.getUpdate();
 
@@ -77,5 +77,6 @@ userSchema.pre("findOneAndUpdate", async function (next) {
 userSchema.methods.comparePassword = async function (candidatePass) {
   return bcrypt.compare(candidatePass, this.password);
 };
+
 
 export default mongoose.model("User", userSchema);

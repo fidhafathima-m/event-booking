@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from './store/slices/authSlice';
@@ -7,24 +7,26 @@ import { getProfile } from './store/slices/authSlice';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-// import Services from './pages/Services';
-// import ServiceDetail from './pages/ServiceDetail';
-// import Bookings from './pages/Bookings';
-// import Profile from './pages/Profile';
+import Services from './pages/Services';
+import ServiceDetail from './pages/ServiceDetail';
+import Bookings from './pages/Bookings';
+import Profile from './pages/Profile';
 
 // Admin Pages
-// import AdminDashboard from './pages/admin/AdminDashboard';
-// import AdminUsers from './pages/admin/Users';
-// import AdminServices from './pages/admin/Services';
-// import AdminBookings from './pages/admin/Bookings';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/Users';
+import AdminServices from './pages/admin/Services';
+import AdminBookings from './pages/admin/Bookings';
 
 // Components
 import ProtectedRoute from './components/common/ProtectedRoute';
-// import LoadingSpinner from './components/common/LoadingSpinner';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import VerifyEmail from './pages/VerifyEmail';
+import RoleRedirect from './components/auth/RoleRedirect';
 
 function App() {
   const dispatch = useDispatch();
-  const { token, isLoading } = useSelector((state) => state.auth);
+  const { token, isLoading, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     if (token) {
@@ -35,7 +37,7 @@ function App() {
   if (isLoading && token) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        {/* <LoadingSpinner size="lg" /> */}
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -43,15 +45,20 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        {/* <Route path="/services" element={<Services />} />
-        <Route path="/services/:id" element={<ServiceDetail />} /> */}
+        {/* Public Routes - Redirect if logged in */}
+        <Route path="/login" element={user ? <RoleRedirect /> : <Login />} />
+        <Route path="/register" element={user ? <RoleRedirect /> : <Register />} />
+        <Route path="/verify-email" element={user ? <RoleRedirect /> : <VerifyEmail />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/services/:id" element={<ServiceDetail />} />
 
-        {/* Protected Routes */}
-        {/* <Route path="/bookings" element={
+        {/* User-only Routes - Block admin access */}
+        <Route path="/" element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        } />
+        <Route path="/bookings" element={
           <ProtectedRoute>
             <Bookings />
           </ProtectedRoute>
@@ -60,10 +67,10 @@ function App() {
           <ProtectedRoute>
             <Profile />
           </ProtectedRoute>
-        } /> */}
+        } />
 
         {/* Admin Routes */}
-        {/* <Route path="/admin" element={
+        <Route path="/admin" element={
           <ProtectedRoute requiredRole="admin">
             <AdminDashboard />
           </ProtectedRoute>
@@ -82,14 +89,19 @@ function App() {
           <ProtectedRoute requiredRole="admin">
             <AdminBookings />
           </ProtectedRoute>
-        } /> */}
+        } />
 
-        {/* Provider Routes */}
-        {/* <Route path="/provider" element={
-          <ProtectedRoute requiredRole="provider">
+        {/* Catch all route for admin pages */}
+        <Route path="/admin/*" element={
+          <ProtectedRoute requiredRole="admin">
             <AdminDashboard />
           </ProtectedRoute>
-        } /> */}
+        } />
+
+        {/* Catch all redirect for admin trying to access user pages */}
+        <Route path="*" element={
+          user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />
+        } />
       </Routes>
     </Router>
   );

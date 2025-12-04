@@ -1,23 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { registerUser } from '../store/slices/authSlice';
+import { useDispatch } from 'react-redux';
+import { registerStep1 } from '../store/slices/authSlice';
 import Layout from '../components/common/Layout';
+import { toast } from 'react-hot-toast';
 
-const Register = () => {
+const RegisterStep1 = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
     phone: '',
-    role: 'user'
   });
 
   const [errors, setErrors] = useState({});
-
-  const { name, email, password, confirmPassword, phone, role } = formData;
-  const { isLoading } = useSelector((state) => state.auth);
+  const [isLoading, setIsLoading] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -53,28 +51,37 @@ const Register = () => {
     }
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
+
+    setIsLoading(true);
 
     const userData = {
       name,
       email,
       password,
       phone,
-      role
     };
 
-    dispatch(registerUser(userData))
-      .unwrap()
-      .then(() => {
-        navigate('/');
-      })
-      .catch(() => {
-        // Error is handled in thunk
+    try {
+      const result = await dispatch(registerStep1(userData)).unwrap();
+      toast.success('OTP sent to your email!');
+      // CHANGED: Only pass email, not userId
+      navigate('/verify-email', { 
+        state: { 
+          email: result.data.email // Only email, no userId
+        } 
       });
+    } catch (error) {
+      toast.error(error.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const { name, email, password, confirmPassword, phone } = formData;
 
   return (
     <Layout>
@@ -157,27 +164,6 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                  Account Type
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  value={role}
-                  onChange={onChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                >
-                  <option value="user">User (Book Services)</option>
-                  <option value="provider">Service Provider</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  {role === 'provider' 
-                    ? 'Service providers can list and manage their services' 
-                    : 'Users can browse and book services'}
-                </p>
-              </div>
-
-              <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password *
                 </label>
@@ -249,7 +235,7 @@ const Register = () => {
                 disabled={isLoading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Creating account...' : 'Create Account'}
+                {isLoading ? 'Sending OTP...' : 'Continue'}
               </button>
             </div>
           </form>
@@ -259,4 +245,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default RegisterStep1;

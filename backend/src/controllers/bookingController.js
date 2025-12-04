@@ -1,5 +1,6 @@
 import Service from "../models/Service.js";
 import Booking from "../models/Booking.js";
+import { ApiResponse } from "../utils/responseHandler.js";
 
 export const createBooking = async (req, res, next) => {
   try {
@@ -13,9 +14,42 @@ export const createBooking = async (req, res, next) => {
       contactPerson,
     } = req.body;
 
+    console.log("Received dates:", { startDate, endDate });
+
     // Validate dates
+    // Parse dates as UTC (YYYY-MM-DD format is parsed as UTC midnight)
     const start = new Date(startDate);
     const end = new Date(endDate);
+    
+    // Get current date in UTC
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    ));
+    
+    // Convert start date to UTC date (without time)
+    const startUTC = new Date(Date.UTC(
+      start.getUTCFullYear(),
+      start.getUTCMonth(),
+      start.getUTCDate()
+    ));
+
+    console.log("Server year check:", {
+  currentYear: now.getUTCFullYear(),
+  currentMonth: now.getUTCMonth() + 1, // Months are 0-indexed
+  currentDate: now.getUTCDate(),
+  currentFullDate: now.toISOString()
+});
+
+    console.log("UTC Date comparison:", {
+      startUTC: startUTC.toISOString(),
+      todayUTC: todayUTC.toISOString(),
+      startUTCValue: startUTC.getTime(),
+      todayUTCValue: todayUTC.getTime(),
+      isPast: startUTC.getTime() < todayUTC.getTime()
+    });
 
     if (start >= end) {
       return res
@@ -23,11 +57,14 @@ export const createBooking = async (req, res, next) => {
         .json(ApiResponse.error("End date must be after start date", 400));
     }
 
-    if (start < new Date()) {
+    // Compare UTC dates
+    if (startUTC < todayUTC) {
       return res
         .status(400)
         .json(ApiResponse.error("Start date cannot be in the past", 400));
     }
+
+    console.log("Finding existing booking..")
 
     // check service exists and is active
     const service = await Service.findById(serviceId);
@@ -36,6 +73,8 @@ export const createBooking = async (req, res, next) => {
         .status(404)
         .json(ApiResponse.error("Service not found or inactive", 404));
     }
+
+    console.log("Finding availability..")
 
     // check availability
     const existingBookings = await Booking.find({
@@ -73,6 +112,8 @@ export const createBooking = async (req, res, next) => {
         );
     }
 
+    console.log("creating booking..")
+
     // Create booking
     const booking = await Booking.create({
       user: userId,
@@ -101,6 +142,8 @@ export const createBooking = async (req, res, next) => {
       )
       .populate("user", "name email phone");
 
+      console.log("sending mail..")
+
     // Send confirmation email
     try {
       await sendBookingConfirmationEmail(populatedBooking);
@@ -109,10 +152,14 @@ export const createBooking = async (req, res, next) => {
       // Don't fail the request if email fails
     }
 
+    console.log("updating count..")
+
     // Update service booking count
     await Service.findByIdAndUpdate(serviceId, {
       $inc: { totalBookings: 1 },
     });
+
+    console.log("created booking!!")
 
     res.status(201).json(
       ApiResponse.success(
@@ -143,17 +190,12 @@ export const getAllBookings = async (req, res, next) => {
     // build query
     let query = {};
 
-    if (req.user.role === "provider") {
-      // Provider can only see bookings of their services
-      const providerServices = await Service.find({
-        provider: req.user.id,
-      }).select("_id");
-      const serviceIds = providerServices.map((s) => s._id);
-      query.service = { $in: serviceIds };
+    // Remove provider logic - only admin and user
+    // Admin can see all bookings, users can only see their own
+    if (req.user.role === "user") {
+      query.user = req.user.id;
     }
-    if (req.user.role === "admin") {
-      // Admin can see all bookings
-    }
+    // For admin, no filter needed - can see all
 
     if (status) {
       query.status = status;
@@ -209,7 +251,6 @@ export const updateBookingStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, cancellationReason } = req.body;
-    const userId = req.user.id;
 
     const booking = await Booking.findById(id)
       .populate("service")
@@ -219,16 +260,25 @@ export const updateBookingStatus = async (req, res, next) => {
       return res.status(404).json(ApiResponse.error("Booking not found", 404));
     }
 
-    // Check authorization
-    if (req.user.role === "provider") {
-      // Provider can only update bookings for their services
-      const isProviderService = booking.service.provider.toString() === userId;
-      if (!isProviderService) {
-        return res
-          .status(403)
-          .json(
-            ApiResponse.error("Not authorized to update this booking", 403)
-          );
+    // Only admin can update booking status
+    if (req.user.role !== "admin") {
+      // Users can only cancel their own pending bookings
+      if (req.user.role === "user") {
+        if (booking.user._id.toString() !== req.user.id) {
+          return res
+            .status(403)
+            .json(
+              ApiResponse.error("Not authorized to update this booking", 403)
+            );
+        }
+        // Users can only cancel pending bookings
+        if (status !== "cancelled" || booking.status !== "pending") {
+          return res
+            .status(403)
+            .json(
+              ApiResponse.error("You can only cancel pending bookings", 403)
+            );
+        }
       }
     }
 
@@ -283,14 +333,12 @@ export const getBookingStats = async (req, res, next) => {
 
     let matchStage = {};
 
-    if (req.user.role === "provider") {
-      // Provider can only see stats for their services
-      const providerServices = await Service.find({
-        provider: req.user.id,
-      }).select("_id");
-      const serviceIds = providerServices.map((s) => s._id);
-      matchStage.service = { $in: serviceIds };
+    // Remove provider logic
+    // Users can only see their own stats
+    if (req.user.role === "user") {
+      matchStage.user = req.user.id;
     }
+    // Admin can see all stats (no filter)
 
     if (startDate || endDate) {
       matchStage.createdAt = {};
@@ -357,25 +405,18 @@ export const getUpcomingBookings = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
 
     let query = {
       "bookingDates.startDate": { $gte: today },
-      status: "confirmed",
+      status: { $in: ["confirmed", "pending"] }, // Include pending bookings
     };
 
-    // For users, only show their bookings
+    // Users see their own bookings
     if (req.user.role === "user") {
       query.user = userId;
     }
-
-    // For providers, show bookings for their services
-    if (req.user.role === "provider") {
-      const providerServices = await Service.find({ provider: userId }).select(
-        "_id"
-      );
-      const serviceIds = providerServices.map((s) => s._id);
-      query.service = { $in: serviceIds };
-    }
+    // Admin sees all upcoming bookings
 
     const bookings = await Booking.find(query)
       .populate("user", "name email phone")
@@ -383,13 +424,11 @@ export const getUpcomingBookings = async (req, res, next) => {
       .sort({ "bookingDates.startDate": 1 })
       .limit(10);
 
-    res
-      .status(200)
-      .json(
-        ApiResponse.success("Upcoming bookings retrieved successfully", {
-          bookings,
-        })
-      );
+    res.status(200).json(
+      ApiResponse.success("Upcoming bookings retrieved successfully", {
+        bookings,
+      })
+    );
   } catch (error) {
     next(error);
   }

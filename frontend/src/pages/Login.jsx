@@ -1,7 +1,6 @@
-// src/pages/Login.jsx
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../store/slices/authSlice';
 import Layout from '../components/common/Layout';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
@@ -14,10 +13,37 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const { email, password } = formData;
-  const { isLoading } = useSelector((state) => state.auth);
+  const { user, isLoading, isSuccess } = useSelector((state) => state.auth);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const redirectBasedOnRole = () => {
+    if (user?.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/');
+    }
+  };
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      redirectBasedOnRole();
+    }
+  }, [user]);
+
+  // Redirect after successful login
+  useEffect(() => {
+    if (isSuccess && user) {
+      // Use setTimeout to ensure state updates are complete
+      const timer = setTimeout(() => {
+        redirectBasedOnRole();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess, user]);
+
 
   const onChange = (e) => {
     setFormData((prevState) => ({
@@ -28,15 +54,21 @@ const Login = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    dispatch(loginUser(formData))
-      .unwrap()
-      .then(() => {
-        navigate('/');
-      })
-      .catch(() => {
-        // Error is handled in thunk
-      });
+    dispatch(loginUser(formData));
   };
+
+  // If user is already logged in, show loading or redirect immediately
+  if (user) {
+    return (
+      <Layout>
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Redirecting to dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -48,9 +80,9 @@ const Login = () => {
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               Or{' '}
-              <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
+              <a href="/register" className="font-medium text-primary-600 hover:text-primary-500">
                 create a new account
-              </Link>
+              </a>
             </p>
           </div>
           <form className="mt-8 space-y-6" onSubmit={onSubmit}>
@@ -130,6 +162,7 @@ const Login = () => {
               </button>
             </div>
 
+            {/* Demo Credentials */}
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -137,30 +170,14 @@ const Login = () => {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white text-gray-500">
-                    Or continue with
+                    Demo Credentials
                   </span>
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Sign in with Google</span>
-                  <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Sign in with Facebook</span>
-                  <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
-                    <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                  </svg>
-                </button>
+              <div className="mt-4 text-center text-sm text-gray-600 space-y-1">
+                <div><strong>Admin:</strong> admin@example.com / admin123</div>
+                <div><strong>User:</strong> user@example.com / user123</div>
               </div>
             </div>
           </form>

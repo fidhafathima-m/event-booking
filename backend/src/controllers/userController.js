@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-import { ApiResponse } from "../utils/ResponseHandler.js";
+import { ApiResponse } from "../utils/responseHandler.js";
 
 export const getUserBookings = async (req, res, next) => {
   try {

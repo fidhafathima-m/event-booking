@@ -22,10 +22,10 @@ const Header = () => {
   };
 
   const userNavigation = [
-    { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
     { name: "My Bookings", href: "/bookings", icon: CalendarIcon },
     { name: "Profile", href: "/profile", icon: UserIcon },
-    ...(user?.role === "admin" || user?.role === "provider"
+    // Only show admin panel for admin users (remove provider)
+    ...(user?.role === "admin"
       ? [{ name: "Admin Panel", href: "/admin", icon: Cog6ToothIcon }]
       : []),
   ];
@@ -64,6 +64,14 @@ const Header = () => {
                   >
                     Bookings
                   </Link>
+                  {user.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Admin
+                    </Link>
+                  )}
                 </>
               )}
             </nav>
@@ -73,7 +81,7 @@ const Header = () => {
             {user ? (
               <div className="flex items-center space-x-4">
                 <Menu as="div" className="relative inline-block text-left">
-                  <MenuButton className="flex items-center space-x-2 bg-gray-100 rounded-full p-1 hover:bg-gray-200 transition">
+                  <Menu.Button className="flex items-center space-x-2 bg-gray-100 rounded-full p-1 hover:bg-gray-200 transition">
                     <div className="h-8 w-8 bg-primary-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-medium">
                         {user.name?.charAt(0).toUpperCase()}
@@ -82,7 +90,7 @@ const Header = () => {
                     <span className="hidden md:inline text-sm font-medium text-gray-700">
                       {user.name}
                     </span>
-                  </MenuButton>
+                  </Menu.Button>
 
                   <Transition
                     as={Fragment}
@@ -93,7 +101,7 @@ const Header = () => {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <MenuItems
+                    <Menu.Items
                       className="absolute right-0 mt-2 w-56 origin-top-right bg-white z-50 
                  rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                     >
@@ -103,11 +111,19 @@ const Header = () => {
                           {user.name}
                         </p>
                         <p className="text-xs text-gray-500">{user.email}</p>
+                        {/* Show role badge */}
+                        <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
+                          user.role === 'admin' 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {user.role === 'admin' ? 'Administrator' : 'User'}
+                        </span>
                       </div>
 
                       {/* Menu Items */}
                       {userNavigation.map((item) => (
-                        <MenuItem key={item.name}>
+                        <Menu.Item key={item.name}>
                           {({ active }) => (
                             <Link
                               to={item.href}
@@ -119,11 +135,11 @@ const Header = () => {
                               {item.name}
                             </Link>
                           )}
-                        </MenuItem>
+                        </Menu.Item>
                       ))}
 
                       {/* Logout */}
-                      <MenuItem>
+                      <Menu.Item>
                         {({ active }) => (
                           <button
                             onClick={handleLogout}
@@ -135,8 +151,8 @@ const Header = () => {
                             Sign out
                           </button>
                         )}
-                      </MenuItem>
-                    </MenuItems>
+                      </Menu.Item>
+                    </Menu.Items>
                   </Transition>
                 </Menu>
               </div>

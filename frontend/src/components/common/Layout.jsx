@@ -1,5 +1,5 @@
 import Header from './Header';
-// import Footer from './Footer';
+import Footer from './Footer';
 import { Toaster } from 'react-hot-toast';
 
 const Layout = ({ children }) => {
@@ -31,7 +31,7 @@ const Layout = ({ children }) => {
       <main className="flex-grow">
         {children}
       </main>
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 };

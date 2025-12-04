@@ -250,3 +250,64 @@ export const sendWelcomeEmail = async (user) => {
     throw error;
   }
 };
+
+export const sendOTPEmail = async (email, otp, name) => {
+  try {
+    const mailOptions = {
+      from: `"EventBook" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Email Verification OTP - EventBook',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #4f46e5; color: white; padding: 20px; text-align: center; }
+            .content { background: #f9fafb; padding: 30px; }
+            .otp-code { 
+              font-size: 32px; 
+              font-weight: bold; 
+              color: #4f46e5; 
+              letter-spacing: 10px;
+              text-align: center;
+              margin: 20px 0;
+            }
+            .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>EventBook</h1>
+            </div>
+            <div class="content">
+              <h2>Hello ${name},</h2>
+              <p>Thank you for registering with EventBook. Please use the OTP below to verify your email address:</p>
+              
+              <div class="otp-code">${otp}</div>
+              
+              <p>This OTP will expire in <strong>10 minutes</strong>.</p>
+              
+              <p>If you didn't create an account with EventBook, please ignore this email.</p>
+              
+              <p>Best regards,<br>The EventBook Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} EventBook. All rights reserved.</p>
+              <p>This email was sent to ${email}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending OTP email:', error);
+    throw new Error('Failed to send OTP email');
+  }
+};

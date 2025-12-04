@@ -1,6 +1,7 @@
 import Booking from "../models/Booking.js";
 import Service from "../models/Service.js";
 import User from "../models/User.js";
+import { ApiResponse } from "../utils/responseHandler.js";
 
 export const getPlatformStats = async (req, res, next) => {
   try {
@@ -113,7 +114,7 @@ export const updateUserRole = async (req, res, next) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!["user", "admin", "provider"].includes(role)) {
+    if (!["user", "admin"].includes(role)) {
       return res
         .status(400)
         .json(ApiResponse.error("Invalid role specified", 400));
@@ -139,53 +140,67 @@ export const updateUserRole = async (req, res, next) => {
 
 export const getAllServices = async (req, res, next) => {
   try {
-    const {
-      category,
-      providerId,
-      isActive,
+    const { 
+      category, 
       search,
-      page = 1,
-      limit = 20,
+      page = 1, 
+      limit = 20 
     } = req.query;
+
+    console.log('Query parameters received:', req.query);
 
     // Build query
     let query = {};
-    if (category) query.category = category;
-    if (providerId) query.provider = providerId;
-    if (isActive !== undefined) query.isActive = isActive === "true";
-    if (search) {
+    
+    
+    // // Handle isActive filter
+    // if (isActive === 'true') {
+    //   query.isActive = true;
+    // } else if (isActive === 'false') {
+    //   query.isActive = false;
+    // }
+    
+    // Other filters
+    if (category && category !== '' && category !== 'undefined') {
+      query.category = category;
+    }
+    
+    // Remove providerId filter
+    
+    if (search && search !== '' && search !== 'undefined') {
       query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { location: { $regex: search, $options: "i" } },
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } }
       ];
     }
 
     // Pagination
     const skip = (page - 1) * limit;
 
-    // Get services with provider details
+    // Count total documents
+    const total = await Service.countDocuments(query);
+
+    // Get services - admin can see all services
     const services = await Service.find(query)
-      .populate("provider", "name email phone")
+      .populate('provider', 'name email phone')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Get total count
-    const total = await Service.countDocuments(query);
-
     res.status(200).json(
-      ApiResponse.success("Services retrieved successfully", {
+      ApiResponse.success('Services retrieved successfully', {
         services,
         pagination: {
           total,
           page: parseInt(page),
           pages: Math.ceil(total / limit),
-          limit: parseInt(limit),
-        },
+          limit: parseInt(limit)
+        }
       })
     );
   } catch (error) {
+    console.error('Error in getAllServices:', error);
     next(error);
   }
 };
@@ -213,69 +228,95 @@ export const toggleServiceActive = async (req, res, next) => {
   }
 };
 
-export const getProviderDashboard = async (req, res, next) => {
+export const createService = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const userId = req.user.id;
+    const serviceData = req.body;
 
-    // Get provider details
-    const provider = await User.findById(id).select("-password");
-    if (!provider || provider.role !== "provider") {
-      return res.status(404).json(ApiResponse.error("Provider not found", 404));
+    // Only admin can create services (since there are no providers)
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json(
+          ApiResponse.error("Only admins can create services", 403)
+        );
     }
 
-    // Get provider's services
-    const services = await Service.find({ provider: id }).select(
-      "title category pricePerDay totalBookings rating"
-    );
+    // Admin creates services - set provider to admin's ID
+    serviceData.provider = userId;
 
-    // Get provider's bookings stats
-    const bookingsStats = await Booking.aggregate([
-      {
-        $lookup: {
-          from: "services",
-          localField: "service",
-          foreignField: "_id",
-          as: "serviceInfo",
-        },
-      },
-      { $unwind: "$serviceInfo" },
-      { $match: { "serviceInfo.provider": provider._id } },
-      {
-        $group: {
-          _id: null,
-          totalBookings: { $sum: 1 },
-          totalRevenue: { $sum: "$totalPrice" },
-          confirmedBookings: {
-            $sum: { $cond: [{ $eq: ["$status", "confirmed"] }, 1, 0] },
-          },
-        },
-      },
-    ]);
+    // Create service
+    const service = await Service.create(serviceData);
 
-    // Get recent bookings
-    const recentBookings = await Booking.find({
-      "serviceInfo.provider": provider._id,
-    })
-      .populate("user", "name email")
-      .populate("service", "title")
-      .sort({ createdAt: -1 })
-      .limit(5);
+    res
+      .status(201)
+      .json(
+        ApiResponse.success("Service created successfully", { service }, 201)
+      );
+  } catch (error) {
+    next(error);
+  }
+};
 
-    res.status(200).json(
-      ApiResponse.success("Provider dashboard retrieved successfully", {
-        provider,
-        stats: {
-          totalServices: services.length,
-          ...(bookingsStats[0] || {
-            totalBookings: 0,
-            totalRevenue: 0,
-            confirmedBookings: 0,
-          }),
-        },
-        services,
-        recentBookings,
-      })
-    );
+export const updateService = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const updateData = req.body;
+
+    const service = await Service.findById(id);
+    if (!service) {
+      return res.status(404).json(ApiResponse.error("Service not found", 404));
+    }
+
+    // Only admin can update services
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json(ApiResponse.error("Not authorized to update this service", 403));
+    }
+
+    const updatedService = await Service.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    res
+      .status(200)
+      .json(
+        ApiResponse.success("Service updated successfully", {
+          service: updatedService,
+        })
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteService = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // find service
+    const service = await Service.findById(id);
+
+    if (!service) {
+      return res.status(404).json(ApiResponse.error("Service not found", 404));
+    }
+
+    // Only admin can delete services
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json(ApiResponse.error("Not authorized to delete this service", 403));
+    }
+
+    // soft delete service
+    service.isActive = false;
+    await service.save();
+
+    res.status(200).json(ApiResponse.success("Service deleted successfully"));
   } catch (error) {
     next(error);
   }
