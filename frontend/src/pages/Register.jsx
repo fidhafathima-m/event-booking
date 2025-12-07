@@ -209,16 +209,6 @@ const RegisterStep1 = () => {
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                required
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-            </div>
-
             <div>
               <button
                 type="submit"
