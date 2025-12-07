@@ -252,9 +252,6 @@ const AdminUsers = () => {
                             >
                               <PencilIcon className="h-4 w-4" />
                             </button>
-                            <button className="text-gray-600 hover:text-gray-900">
-                              View Details
-                            </button>
                           </div>
                         </td>
                       </tr>

@@ -11,6 +11,7 @@ import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
 import Bookings from './pages/Bookings';
 import Profile from './pages/Profile';
+import NotFound from './pages/NotFound'; 
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -53,9 +54,7 @@ function App() {
         <Route path="/services/:id" element={<ServiceDetail />} />
 
         {/* User-only Routes - Block admin access */}
-        <Route path="/" element={
-            <Home />
-        } />
+        <Route path="/" element={<Home />} />
         <Route path="/bookings" element={
           <ProtectedRoute>
             <Bookings />
@@ -89,12 +88,8 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* Catch all route for admin pages */}
-        <Route path="/admin/*" element={
-          <ProtectedRoute requiredRole="admin">
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
+        {/* Catch all route - ADD THIS */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
