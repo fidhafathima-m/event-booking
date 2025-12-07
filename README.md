@@ -51,7 +51,12 @@ REACT_APP_API_URL=http://localhost:5000/api
 ---
 
 ## API Endpoints
+[API Documentation](https://documenter.getpostman.com/view/40363601/2sB3dPTqgk)
 
+---
+
+## Database 
+[Db Design](https://app.eraser.io/workspace/zsUqkmEhZ2qO9wISPyBs?origin=share)
 
 ---
 
