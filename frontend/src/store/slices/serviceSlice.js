@@ -35,7 +35,6 @@ export const createService = createAsyncThunk(
   async (serviceData, { rejectWithValue }) => {
     try {
       const response = await api.post('/services', serviceData);
-      toast.success('Service created successfully');
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create service');
@@ -49,7 +48,6 @@ export const updateService = createAsyncThunk(
   async ({ id, serviceData }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/services/${id}`, serviceData);
-      toast.success('Service updated successfully');
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update service');
@@ -63,7 +61,6 @@ export const deleteService = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await api.delete(`/services/${id}`);
-      toast.success('Service deleted successfully');
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete service');

@@ -9,7 +9,6 @@ export const createBooking = createAsyncThunk(
   async (bookingData, { rejectWithValue }) => {
     try {
       const response = await api.post('/bookings', bookingData);
-      toast.success('Booking created successfully');
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create booking');
@@ -37,7 +36,6 @@ export const cancelBooking = createAsyncThunk(
   async ({ id, reason }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/users/bookings/${id}/cancel`, { cancellationReason: reason });
-      toast.success('Booking cancelled successfully');
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to cancel booking');
@@ -80,7 +78,6 @@ export const updateBookingStatus = createAsyncThunk(
         status, 
         cancellationReason: reason 
       });
-      toast.success('Booking status updated');
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update booking status');
