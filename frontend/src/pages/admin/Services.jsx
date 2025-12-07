@@ -25,9 +25,14 @@ import {
   UserIcon,
   EnvelopeIcon,
   PhoneIcon,
-  HomeIcon
+  HomeIcon,
+  CalendarIcon,
+  UsersIcon,
+  TagIcon,
+  CheckIcon,
+  XMarkIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
-import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { toast } from 'react-hot-toast';
 import { SERVICE_CATEGORIES } from '../../utils/constants';
@@ -45,10 +50,11 @@ const AdminServices = () => {
     limit: 10
   });
 
-  // Add Service Modal State
+  // Modal States
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingService, setEditingService] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -76,7 +82,6 @@ const AdminServices = () => {
       try {
         await dispatch(toggleServiceStatus(serviceId)).unwrap();
         toast.success('Service status updated');
-        // Refresh services list
         dispatch(fetchAllServices(filters));
       } catch (error) {
         toast.error('Failed to update service status', error);
@@ -89,7 +94,6 @@ const AdminServices = () => {
       try {
         await dispatch(deleteService(serviceId)).unwrap();
         toast.success('Service deleted successfully');
-        // Refresh services list
         dispatch(fetchAllServices(filters));
       } catch (error) {
         toast.error('Failed to delete service', error);
@@ -101,7 +105,7 @@ const AdminServices = () => {
     setFilters(prev => ({ ...prev, page }));
   };
 
-  // Add Service Modal Handlers
+  // Modal Handlers
   const openAddModal = () => {
     setFormData({
       title: '',
@@ -117,13 +121,19 @@ const AdminServices = () => {
       features: [''],
       capacity: '',
       tags: [''],
-      images: ['']
+      images: [''],
+      provider: user?._id
     });
     setShowAddModal(true);
   };
 
+  const openViewModal = (service) => {
+    setSelectedService(service);
+    setShowViewModal(true);
+  };
+
   const openEditModal = (service) => {
-    setEditingService(service);
+    setSelectedService(service);
     setFormData({
       title: service.title,
       description: service.description,
@@ -134,15 +144,18 @@ const AdminServices = () => {
       features: service.features?.length > 0 ? service.features : [''],
       capacity: service.capacity || '',
       tags: service.tags?.length > 0 ? service.tags : [''],
-      images: service.images?.length > 0 ? service.images : ['']
+      images: service.images?.length > 0 ? service.images : [''],
+      provider: service.provider?._id || user?._id
     });
+    setShowViewModal(false);
     setShowEditModal(true);
   };
 
   const closeModals = () => {
     setShowAddModal(false);
     setShowEditModal(false);
-    setEditingService(null);
+    setShowViewModal(false);
+    setSelectedService(null);
   };
 
   const handleInputChange = (e) => {
@@ -195,14 +208,12 @@ const AdminServices = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate form
     if (!formData.title || !formData.description || !formData.pricePerDay || !formData.location) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
-      // Filter out empty array items
       const submitData = {
         ...formData,
         features: formData.features.filter(f => f.trim() !== ''),
@@ -210,30 +221,36 @@ const AdminServices = () => {
         images: formData.images.filter(i => i.trim() !== ''),
         pricePerDay: parseFloat(formData.pricePerDay),
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
-        provider: 'admin'
+        provider: user?._id
       };
 
-      if (showEditModal && editingService) {
-        // Update existing service
+      if (showEditModal && selectedService) {
         await dispatch(updateService({ 
-          serviceId: editingService._id, 
+          serviceId: selectedService._id, 
           serviceData: submitData 
         })).unwrap();
         toast.success('Service updated successfully');
         closeModals();
-        // Refresh services list
         dispatch(fetchAllServices(filters));
       } else {
-        // Create new service
         await dispatch(createService(submitData)).unwrap();
         toast.success('Service created successfully');
         closeModals();
-        // Refresh services list
         dispatch(fetchAllServices(filters));
       }
     } catch (error) {
       toast.error(error.message || 'Failed to save service');
     }
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   return (
@@ -259,7 +276,6 @@ const AdminServices = () => {
         {/* Filters */}
         <div className="bg-white rounded-xl shadow p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search Services
@@ -276,7 +292,6 @@ const AdminServices = () => {
               </div>
             </div>
 
-            {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category
@@ -295,7 +310,6 @@ const AdminServices = () => {
               </select>
             </div>
 
-            {/* Status Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Status
@@ -345,26 +359,32 @@ const AdminServices = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {services.map((service) => (
                       <tr key={service._id} className="hover:bg-gray-50">
-                        {/* Service Info */}
                         <td className="px-6 py-4">
                           <div className="flex items-center">
-                            <div className="h-12 w-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <BuildingStorefrontIcon className="h-6 w-6 text-gray-600" />
-                            </div>
+                            {service.images?.[0] ? (
+                              <img 
+                                src={service.images[0]} 
+                                alt={service.title}
+                                className="h-12 w-12 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <BuildingStorefrontIcon className="h-6 w-6 text-gray-600" />
+                              </div>
+                            )}
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
                                 {service.title}
                               </div>
                               <div className="text-sm text-gray-500">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                  {service.category}
+                                  {SERVICE_CATEGORIES.find(c => c.value === service.category)?.label || service.category}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </td>
 
-                        {/* Details */}
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             <div className="flex items-center">
@@ -378,12 +398,12 @@ const AdminServices = () => {
                           </div>
                         </td>
 
-                        {/* Stats */}
                         <td className="px-6 py-4">
                           <div className="text-sm">
                             <div className="flex items-center">
                               <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
                               <span className="font-medium">{service.rating || '0.0'}</span>
+                              <span className="text-gray-500 ml-1">({service.totalReviews || 0})</span>
                             </div>
                             <div className="text-gray-500 mt-1">
                               {service.totalBookings || 0} bookings
@@ -391,7 +411,6 @@ const AdminServices = () => {
                           </div>
                         </td>
 
-                        {/* Status */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
                             onClick={() => handleToggleStatus(service._id)}
@@ -413,19 +432,20 @@ const AdminServices = () => {
                               </>
                             )}
                           </button>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Created: {formatDate(service.createdAt)}
+                          </div>
                         </td>
 
-                        {/* Actions */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <Link
-                              to={`/services/${service._id}`}
+                            <button 
+                              onClick={() => openViewModal(service)}
                               className="text-primary-600 hover:text-primary-900 p-1"
-                              target="_blank"
-                              title="View"
+                              title="View Details"
                             >
                               <EyeIcon className="h-4 w-4" />
-                            </Link>
+                            </button>
                             <button 
                               onClick={() => openEditModal(service)}
                               className="text-blue-600 hover:text-blue-900 p-1"
@@ -448,7 +468,6 @@ const AdminServices = () => {
                 </table>
               </div>
 
-              {/* Empty State */}
               {services.length === 0 && (
                 <div className="text-center py-12">
                   <BuildingStorefrontIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -468,7 +487,6 @@ const AdminServices = () => {
                 </div>
               )}
 
-              {/* Pagination */}
               {pagination.pages > 1 && (
                 <div className="border-t border-gray-200 px-6 py-4">
                   <Pagination
@@ -482,6 +500,257 @@ const AdminServices = () => {
           )}
         </div>
       </div>
+
+      {/* View Service Modal */}
+      {showViewModal && selectedService && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Service Details
+                </h2>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => openEditModal(selectedService)}
+                    className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+                  >
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={closeModals}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <span className="sr-only">Close</span>
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                {/* Header with Images */}
+                <div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {selectedService.title}
+                      </h3>
+                      <div className="flex items-center mt-2">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mr-3">
+                          {SERVICE_CATEGORIES.find(c => c.value === selectedService.category)?.label || selectedService.category}
+                        </span>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          selectedService.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {selectedService.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-gray-900">
+                        ₹{selectedService.pricePerDay}/day
+                      </div>
+                      <div className="text-sm text-gray-500">Price per day</div>
+                    </div>
+                  </div>
+
+                  {/* Images Carousel */}
+                  {selectedService.images?.length > 0 && (
+                    <div className="mt-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {selectedService.images.map((image, index) => (
+                          <div key={index} className="aspect-video rounded-lg overflow-hidden">
+                            <img 
+                              src={image} 
+                              alt={`${selectedService.title} - ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                    <InformationCircleIcon className="h-5 w-5 inline mr-2" />
+                    Description
+                  </h4>
+                  <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
+                    {selectedService.description}
+                  </p>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                      <MapPinIcon className="h-5 w-5 inline mr-2" />
+                      Location Details
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <div className="w-24 text-gray-600">Location:</div>
+                        <div className="font-medium">{selectedService.location}</div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-24 text-gray-600">Address:</div>
+                        <div className="font-medium">{selectedService.contactInfo?.address || 'N/A'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                      <UsersIcon className="h-5 w-5 inline mr-2" />
+                      Capacity & Stats
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <div className="w-24 text-gray-600">Capacity:</div>
+                        <div className="font-medium">{selectedService.capacity || 'N/A'}</div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-24 text-gray-600">Total Bookings:</div>
+                        <div className="font-medium">{selectedService.totalBookings || 0}</div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-24 text-gray-600">Rating:</div>
+                        <div className="flex items-center">
+                          <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
+                          <span className="font-medium">{selectedService.rating || '0.0'}</span>
+                          <span className="text-gray-500 ml-1">({selectedService.totalReviews || 0} reviews)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                    <UserIcon className="h-5 w-5 inline mr-2" />
+                    Contact Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
+                    <div>
+                      <div className="text-sm text-gray-600">Email</div>
+                      <div className="font-medium">{selectedService.contactInfo?.email || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Phone</div>
+                      <div className="font-medium">{selectedService.contactInfo?.phone || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Provider</div>
+                      <div className="font-medium">
+                        {selectedService.provider?.name || selectedService.provider?.email || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Features */}
+                {selectedService.features?.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                      <CheckIcon className="h-5 w-5 inline mr-2" />
+                      Features
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedService.features.map((feature, index) => (
+                        <span 
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                        >
+                          <CheckIcon className="h-3 w-3 mr-1" />
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tags */}
+                {selectedService.tags?.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                      <TagIcon className="h-5 w-5 inline mr-2" />
+                      Tags
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedService.tags.map((tag, index) => (
+                        <span 
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Timestamps */}
+                <div className="border-t pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div>
+                      <div className="flex items-center">
+                        <CalendarIcon className="h-4 w-4 mr-2" />
+                        Created: {formatDate(selectedService.createdAt)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center">
+                        <CalendarIcon className="h-4 w-4 mr-2" />
+                        Last Updated: {formatDate(selectedService.updatedAt)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="border-t pt-6 flex justify-end space-x-4">
+                  <button
+                    onClick={() => handleToggleStatus(selectedService._id)}
+                    className={`px-4 py-2 rounded-lg flex items-center ${
+                      selectedService.isActive
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                    }`}
+                  >
+                    {selectedService.isActive ? (
+                      <>
+                        <XMarkIcon className="h-4 w-4 mr-2" />
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <CheckIcon className="h-4 w-4 mr-2" />
+                        Activate
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => openEditModal(selectedService)}
+                    className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center"
+                  >
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Edit Service
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Service Modal */}
       {(showAddModal || showEditModal) && (
@@ -504,6 +773,8 @@ const AdminServices = () => {
               </div>
 
               <form onSubmit={handleSubmit}>
+                {/* ... Rest of the edit form remains exactly the same ... */}
+                {/* [Keep all the existing form fields from your original code] */}
                 <div className="space-y-6">
                   {/* Basic Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -588,7 +859,7 @@ const AdminServices = () => {
                     </div>
                   </div>
 
-                  {/* Description */}
+                   {/* Description */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Description *
@@ -762,6 +1033,9 @@ const AdminServices = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* ... Rest of the form fields ... */}
+                  {/* [Include all the remaining form fields from your original code] */}
 
                   {/* Form Actions */}
                   <div className="border-t pt-6 flex justify-end space-x-4">

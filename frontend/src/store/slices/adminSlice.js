@@ -131,6 +131,7 @@ export const fetchAllBookings = createAsyncThunk(
     try {
       const params = new URLSearchParams(filters).toString();
       const response = await api.get(`/bookings?${params}`);
+      console.log("Booking response: ", response.data)
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch bookings');

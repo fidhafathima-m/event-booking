@@ -54,9 +54,7 @@ function App() {
 
         {/* User-only Routes - Block admin access */}
         <Route path="/" element={
-          <ProtectedRoute>
             <Home />
-          </ProtectedRoute>
         } />
         <Route path="/bookings" element={
           <ProtectedRoute>
@@ -96,11 +94,6 @@ function App() {
           <ProtectedRoute requiredRole="admin">
             <AdminDashboard />
           </ProtectedRoute>
-        } />
-
-        {/* Catch all redirect for admin trying to access user pages */}
-        <Route path="*" element={
-          user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />
         } />
       </Routes>
     </Router>

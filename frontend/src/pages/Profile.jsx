@@ -325,56 +325,6 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Quick Actions */}
-              <div className="bg-white rounded-xl shadow">
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                    Quick Actions
-                  </h3>
-                  <div className="space-y-3">
-                    <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center">
-                        <KeyIcon className="h-5 w-5 mr-3 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700">
-                          Security Settings
-                        </span>
-                      </div>
-                      <span className="text-gray-400">→</span>
-                    </button>
-                    <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center">
-                        <CalendarIcon className="h-5 w-5 mr-3 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700">
-                          Booking History
-                        </span>
-                      </div>
-                      <span className="text-gray-400">→</span>
-                    </button>
-                    <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center">
-                        <EnvelopeIcon className="h-5 w-5 mr-3 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700">
-                          Notifications
-                        </span>
-                      </div>
-                      <span className="text-gray-400">→</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Account Type Badge */}
-              <div className="mt-6 p-6 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl shadow text-white">
-                <h3 className="text-lg font-semibold mb-2">
-                  {user.role === "admin" ? "Administrator" : "User"}
-                </h3>
-                <p className="text-sm opacity-90 mb-4">
-                  {user.role === "admin"
-                    ? "You have full administrative access to manage the platform."
-                    : "You can book services and manage your events."}
-                </p>
-              </div>
             </div>
           </div>
         </div>

@@ -89,7 +89,6 @@ export const updateProfile = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await api.put("/auth/update-profile", userData);
-      toast.success("Profile updated successfully!");
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || "Profile update failed");

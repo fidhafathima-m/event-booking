@@ -52,12 +52,6 @@ const Home = () => {
             >
               Explore Services
             </Link>
-            <Link
-              to="/register"
-              className="ml-4 inline-flex items-center px-6 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-white hover:text-primary-700 md:py-4 md:text-lg md:px-8"
-            >
-              Become a Provider
-            </Link>
           </div>
         </div>
       </div>

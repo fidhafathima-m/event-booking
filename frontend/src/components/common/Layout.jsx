@@ -7,7 +7,7 @@ const Layout = ({ children }) => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <Toaster 
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 3000,
           style: {
