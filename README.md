@@ -4,7 +4,7 @@ A MERN stack application for managing event services and bookings with admin das
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 - Node.js (v16+)
@@ -50,31 +50,12 @@ REACT_APP_API_URL=http://localhost:5000/api
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
-### Authentication
-- **POST** /api/auth/register - Register user
-- **POST** /api/auth/login - Login user
-- **GET** /api/auth/profile - Get user profile
-
-### Services
-- **GET** /api/services - Get all services
-- **POST** /api/services - Create service (Admin)
-- **GET** /api/services/:id - Get single service
-
-### Bookings
-- **POST** /api/bookings - Create booking
-- **GET** /api/bookings/my-bookings - Get user bookings
-- **PUT** /api/bookings/:id/status - Update status (Admin)
-
-### Admin
-- **GET** /api/admin/users - Get all users (Admin)
-- **GET** /api/admin/bookings - Get all bookings (Admin)
-- **GET** /api/admin/dashboard - Get stats (Admin)
 
 ---
 
-## 👥 User Roles
+## User Roles
 
 ### Regular User
 - Browse services
@@ -90,46 +71,28 @@ REACT_APP_API_URL=http://localhost:5000/api
 
 ---
 
-## 🔧 Default Setup
+## Default Setup
 
 ### Create Admin User
 ```javascript
 db.users.updateOne(
-  { email: "admin@example.com" },
+  { email: "admin@eventbook.com" },
   { $set: { role: "admin" } }
 )
 ```
 
 ### Test Credentials
-- User: user@example.com / password123
-- Admin: admin@example.com / admin123
+- Admin: admin@eventbook.com / password123
 
 ---
 
-## 🌐 Application URLs
+## Application URLs
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000/api
 
 ---
 
-## 🚨 Troubleshooting
-
-### Common Issues
-- MongoDB not connecting → Ensure MongoDB is running
-- CORS errors → Verify FRONTEND_URL in backend .env
-- JWT errors → Check JWT_SECRET in .env
-
-### Quick Checks
-```bash
-mongod --version
-node --version
-netstat -ano | findstr :3000
-netstat -ano | findstr :5000
-```
-
----
-
-## 📁 Project Structure
+## Project Structure
 ```
 event-management/
 ├── frontend/          # React app
@@ -147,9 +110,7 @@ event-management/
 └── README.md
 ```
 
----
-
-## 🚀 Deployment
+## Deployment
 
 ### Backend
 ```bash
@@ -162,8 +123,3 @@ npm start
 npm run build
 # Deploy build/ folder to hosting
 ```
-
----
-
-## 📞 Support
-For issues, create a GitHub issue or email: support@example.com
