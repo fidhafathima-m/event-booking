@@ -88,7 +88,7 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* Catch all route - ADD THIS */}
+        {/* Catch all route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

@@ -24,7 +24,7 @@ const Header = () => {
   const userNavigation = [
     { name: "My Bookings", href: "/bookings", icon: CalendarIcon },
     { name: "Profile", href: "/profile", icon: UserIcon },
-    // Only show admin panel for admin users (remove provider)
+    // Only show admin panel for admin users
     ...(user?.role === "admin"
       ? [{ name: "Admin Panel", href: "/admin", icon: Cog6ToothIcon }]
       : []),

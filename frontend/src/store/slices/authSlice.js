@@ -20,7 +20,6 @@ export const verifyOTP = createAsyncThunk(
   "auth/verifyOTP",
   async (otpData, { rejectWithValue }) => {
     try {
-      // CHANGED: Now expects { email, otp } instead of { userId, otp }
       const response = await api.post("/auth/verify-otp", otpData);
       const { token } = response.data.data;
       
@@ -41,7 +40,6 @@ export const resendOTP = createAsyncThunk(
   "auth/resendOTP",
   async (data, { rejectWithValue }) => {
     try {
-      // CHANGED: Now expects { email } instead of { userId }
       const response = await api.post("/auth/resend-otp", data);
       toast.success("New OTP sent!");
       return response.data;
@@ -147,7 +145,6 @@ const authSlice = createSlice({
       .addCase(registerStep1.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        // CHANGED: Store only email in tempUser
         state.tempUser = { email: action.payload.data.email };
       })
       .addCase(registerStep1.rejected, (state, action) => {

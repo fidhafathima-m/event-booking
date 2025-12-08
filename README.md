@@ -2,6 +2,8 @@
 
 A MERN stack application for managing event services and bookings with admin dashboard.
 
+[Live Website](https://event-booking-sandy-pi.vercel.app)
+
 ---
 
 ## Quick Start

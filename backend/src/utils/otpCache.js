@@ -1,6 +1,3 @@
-// Simple in-memory cache for development
-// In production, use Redis or similar
-
 const otpCache = new Map();
 
 export const storeOTP = (email, data) => {

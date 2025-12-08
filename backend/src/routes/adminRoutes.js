@@ -56,7 +56,7 @@ router.get('/stats', getPlatformStats);
 router.get('/users', getAllUsers);
 router.put('/users/:id/role', updateUserRole);
 
-// Service management - ADMIN VERSION (overrides regular service routes)
+// Service management
 router.get('/services', getAllServices);
 router.post('/services', serviceValidation, validateRequest, createService);
 router.put('/services/:id/toggle-active', toggleServiceActive);

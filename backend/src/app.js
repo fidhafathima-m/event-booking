@@ -14,10 +14,16 @@ import adminRoutes from "./routes/adminRoutes.js"
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:3000"
+];
+
 // CORS Config.
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -31,7 +37,7 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 request
 });
 
-// app.use("/api/", limiter);
+app.use("/api/", limiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

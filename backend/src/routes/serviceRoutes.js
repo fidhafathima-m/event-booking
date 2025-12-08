@@ -9,7 +9,7 @@ import {
   getServices,
   updateService,
 } from "../controllers/serviceController.js";
-import { isProvider, protect } from "../middlewares/auth.js";
+import { protect } from "../middlewares/auth.js";
 import { validateRequest } from "../utils/validation.js";
 
 // Validation rules
@@ -57,16 +57,15 @@ router.post(
   checkAvailability
 );
 
-// Protected routes (Provider/Admin only)
+// Protected routes
 router.use(protect);
-router.post("/", isProvider, serviceValidation, validateRequest, createService);
+router.post("/", serviceValidation, validateRequest, createService);
 router.put(
   "/:id",
-  isProvider,
   serviceValidation,
   validateRequest,
   updateService
 );
-router.delete("/:id", isProvider, deleteService);
+router.delete("/:id", deleteService);
 
 export default router;

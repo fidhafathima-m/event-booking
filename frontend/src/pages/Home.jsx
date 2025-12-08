@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import { Link } from 'react-router-dom';
 import Layout from '../components/common/Layout';
 import { 

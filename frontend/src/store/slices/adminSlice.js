@@ -81,7 +81,6 @@ export const toggleServiceStatus = createAsyncThunk(
   }
 );
 
-// FIXED: Use /admin/services instead of /services
 export const createService = createAsyncThunk(
   'admin/createService',
   async (serviceData, { rejectWithValue }) => {
@@ -110,7 +109,6 @@ export const updateService = createAsyncThunk(
   }
 );
 
-// FIXED: Use /admin/services instead of /services
 export const deleteService = createAsyncThunk(
   'admin/deleteService',
   async (serviceId, { rejectWithValue }) => {

@@ -190,7 +190,6 @@ export const getAllBookings = async (req, res, next) => {
     // build query
     let query = {};
 
-    // Remove provider logic - only admin and user
     // Admin can see all bookings, users can only see their own
     if (req.user.role === "user") {
       query.user = req.user.id;
@@ -333,7 +332,6 @@ export const getBookingStats = async (req, res, next) => {
 
     let matchStage = {};
 
-    // Remove provider logic
     // Users can only see their own stats
     if (req.user.role === "user") {
       matchStage.user = req.user.id;
@@ -409,7 +407,7 @@ export const getUpcomingBookings = async (req, res, next) => {
 
     let query = {
       "bookingDates.startDate": { $gte: today },
-      status: { $in: ["confirmed", "pending"] }, // Include pending bookings
+      status: { $in: ["confirmed", "pending"] },
     };
 
     // Users see their own bookings
