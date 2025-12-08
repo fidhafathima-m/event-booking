@@ -1,26 +1,34 @@
-import nodemailer from "nodemailer";
+import sgMail from '@sendgrid/mail';
 import dotenv from "dotenv";
 dotenv.config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Initialize SendGrid with API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Verify transporter
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email transporter verification failed:", error);
-  } else {
-    console.log("Email transporter is ready");
+// Verify SendGrid connection
+const verifySendGrid = async () => {
+  try {
+    // Test connection by sending a simple validation request
+    const [response] = await sgMail.send({
+      to: process.env.EMAIL_USER, // Send test to yourself
+      from: process.env.EMAIL_USER,
+      subject: 'SendGrid Connection Test',
+      text: 'SendGrid is working correctly!',
+    });
+    console.log('SendGrid is ready to send emails');
+    console.log('Test email sent:', response);
+    return true;
+  } catch (error) {
+    console.error('SendGrid verification failed:', error);
+    if (error.response) {
+      console.error('SendGrid error details:', error.response.body);
+    }
+    return false;
   }
-});
+};
+
+// Call verification on startup
+verifySendGrid();
 
 // Email templates
 export const emailTemplates = {
@@ -152,50 +160,75 @@ export const emailTemplates = {
   `,
 };
 
-// Send booking confirmation email
+// Send booking confirmation email with SendGrid
 export const sendBookingConfirmationEmail = async (booking) => {
-  const mailOptions = {
-    from: `"Event Booking Platform" <${process.env.EMAIL_USER}>`,
+  const msg = {
     to: booking.contactPerson?.email || booking.user?.email,
+    from: {
+      email: process.env.EMAIL_USER,
+      name: 'Event Booking Platform',
+    },
     subject: `Booking Confirmation - ${booking.service?.title}`,
     html: emailTemplates.bookingConfirmation(booking),
+    // Optional tracking
+    trackingSettings: {
+      clickTracking: {
+        enable: true,
+        enableText: false,
+      },
+      openTracking: {
+        enable: true,
+      },
+    },
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Booking confirmation email sent: ${info.messageId}`);
-    return info;
+    const [response] = await sgMail.send(msg);
+    console.log(`Booking confirmation email sent via SendGrid: ${response}`);
+    return response;
   } catch (error) {
-    console.error("Error sending booking confirmation email:", error);
+    console.error('Error sending booking confirmation email:', error);
+    
+    // More detailed error logging
+    if (error.response) {
+      console.error('SendGrid error response body:', error.response.body);
+    }
+    
     throw error;
   }
 };
 
 // Send booking status update email
 export const sendBookingStatusUpdateEmail = async (booking, newStatus) => {
-  const mailOptions = {
-    from: `"Event Booking Platform" <${process.env.EMAIL_USER}>`,
+  const msg = {
     to: booking.contactPerson?.email || booking.user?.email,
+    from: {
+      email: process.env.EMAIL_USER,
+      name: 'Event Booking Platform',
+    },
     subject: `Booking Status Update - ${booking.service?.title}`,
     html: emailTemplates.bookingStatusUpdate(booking, newStatus),
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Status update email sent: ${info.messageId}`);
-    return info;
+    const [response] = await sgMail.send(msg);
+    console.log(`Status update email sent via SendGrid: ${response}`);
+    return response;
   } catch (error) {
-    console.error("Error sending status update email:", error);
+    console.error('Error sending status update email:', error);
     throw error;
   }
 };
 
 // Send welcome email
 export const sendWelcomeEmail = async (user) => {
-  const mailOptions = {
-    from: `"Event Booking Platform" <${process.env.EMAIL_USER}>`,
+  const msg = {
     to: user.email,
-    subject: "Welcome to Event Booking Platform!",
+    from: {
+      email: process.env.EMAIL_USER,
+      name: 'Event Booking Platform',
+    },
+    subject: 'Welcome to Event Booking Platform!',
     html: `
       <!DOCTYPE html>
       <html>
@@ -224,9 +257,7 @@ export const sendWelcomeEmail = async (user) => {
               <li>Get the best deals for your events</li>
             </ul>
             <p style="text-align: center;">
-              <a href="${
-                process.env.FRONTEND_URL
-              }/services" class="button">Browse Services</a>
+              <a href="${process.env.FRONTEND_URL}/services" class="button">Browse Services</a>
             </p>
             <p>If you have any questions, feel free to contact our support team.</p>
             <p>Happy booking!</p>
@@ -242,72 +273,87 @@ export const sendWelcomeEmail = async (user) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Welcome email sent to ${user.email}: ${info.messageId}`);
-    return info;
+    const [response] = await sgMail.send(msg);
+    console.log(`Welcome email sent via SendGrid to ${user.email}: ${response}`);
+    return response;
   } catch (error) {
-    console.error("Error sending welcome email:", error);
+    console.error('Error sending welcome email:', error);
     throw error;
   }
 };
 
+// Send OTP email with SendGrid
 export const sendOTPEmail = async (email, otp, name) => {
-  try {
-    const mailOptions = {
-      from: `"EventBook" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'Email Verification OTP - EventBook',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #4f46e5; color: white; padding: 20px; text-align: center; }
-            .content { background: #f9fafb; padding: 30px; }
-            .otp-code { 
-              font-size: 32px; 
-              font-weight: bold; 
-              color: #4f46e5; 
-              letter-spacing: 10px;
-              text-align: center;
-              margin: 20px 0;
-            }
-            .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>EventBook</h1>
-            </div>
-            <div class="content">
-              <h2>Hello ${name},</h2>
-              <p>Thank you for registering with EventBook. Please use the OTP below to verify your email address:</p>
-              
-              <div class="otp-code">${otp}</div>
-              
-              <p>This OTP will expire in <strong>10 minutes</strong>.</p>
-              
-              <p>If you didn't create an account with EventBook, please ignore this email.</p>
-              
-              <p>Best regards,<br>The EventBook Team</p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} EventBook. All rights reserved.</p>
-              <p>This email was sent to ${email}</p>
-            </div>
+  const msg = {
+    to: email,
+    from: {
+      email: process.env.EMAIL_USER,
+      name: 'EventBook',
+    },
+    subject: 'Email Verification OTP - EventBook',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #4f46e5; color: white; padding: 20px; text-align: center; }
+          .content { background: #f9fafb; padding: 30px; }
+          .otp-code { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #4f46e5; 
+            letter-spacing: 10px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>EventBook</h1>
           </div>
-        </body>
-        </html>
-      `,
-    };
+          <div class="content">
+            <h2>Hello ${name},</h2>
+            <p>Thank you for registering with EventBook. Please use the OTP below to verify your email address:</p>
+            
+            <div class="otp-code">${otp}</div>
+            
+            <p>This OTP will expire in <strong>10 minutes</strong>.</p>
+            
+            <p>If you didn't create an account with EventBook, please ignore this email.</p>
+            
+            <p>Best regards,<br>The EventBook Team</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} EventBook. All rights reserved.</p>
+            <p>This email was sent to ${email}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    // Add category for better tracking in SendGrid dashboard
+    categories: ['otp', 'verification'],
+  };
 
-    await transporter.sendMail(mailOptions);
+  try {
+    const [response] = await sgMail.send(msg);
+    console.log(`OTP email sent via SendGrid to ${email}`);
     return true;
   } catch (error) {
-    console.error('Error sending OTP email:', error);
+    console.error('Error sending OTP email via SendGrid:', error);
+    
+    // Detailed error information
+    if (error.response) {
+      console.error('SendGrid response error:', error.response.body);
+    }
+    
     throw new Error('Failed to send OTP email');
   }
 };
+
+export default sgMail;

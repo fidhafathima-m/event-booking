@@ -7,7 +7,6 @@ export const registerStep1 = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await api.post("/auth/register", userData);
-      toast.success("OTP sent to your email!");
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
@@ -22,8 +21,6 @@ export const verifyOTP = createAsyncThunk(
     try {
       const response = await api.post("/auth/verify-otp", otpData);
       const { token } = response.data.data;
-      
-      toast.success("Email verified successfully!");
       
       // Store token in localStorage
       localStorage.setItem("token", token);
