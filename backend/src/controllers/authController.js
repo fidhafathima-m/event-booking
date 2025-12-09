@@ -196,23 +196,49 @@ export const getMe = async (req, res, next) => {
   }
 };
 
+// authController.js - Update the updateProfile function
 export const updateProfile = async (req, res, next) => {
   try {
-    const { name, phone } = req.body;
+    const { name, phone, password } = req.body;
     const userId = req.user.id;
+
+    // Find user
+    const user = await User.findById(userId).select("+password");
 
     // fields to update
     const updateFields = {};
     if (name) updateFields.name = name;
     if (phone) updateFields.phone = phone;
+    
+    // Handle password update
+    if (password) {
+      // Validate password length
+      if (password.length < 6) {
+        return res.status(400).json(
+          ApiResponse.error("Password must be at least 6 characters", 400)
+        );
+      }
+      
+      // Set the new password (the model's pre-save will hash it)
+      user.password = password;
+      await user.save();
+    }
 
-    const user = await User.findByIdAndUpdate(userId, updateFields, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
+    // Update other fields
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateFields,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password");
+
     res
       .status(200)
-      .json(ApiResponse.success("Profile updated successfully", { user }));
+      .json(ApiResponse.success("Profile updated successfully", { 
+        user: password ? user.toObject() : updatedUser 
+      }));
   } catch (error) {
     next(error);
   }

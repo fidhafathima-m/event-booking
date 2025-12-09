@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { 
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
   fetchAllBookings,
-  updateBookingStatus 
-} from '../../store/slices/adminSlice';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import Pagination from '../../components/common/Pagination';
-import { 
+  updateBookingStatus,
+} from "../../store/slices/adminSlice";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import Pagination from "../../components/common/Pagination";
+import {
   MagnifyingGlassIcon,
   CalendarIcon,
   UserIcon,
@@ -22,22 +22,24 @@ import {
   InformationCircleIcon,
   CreditCardIcon,
   CalendarDaysIcon,
-  UsersIcon
-} from '@heroicons/react/24/outline';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { toast } from 'react-hot-toast';
+  UsersIcon,
+} from "@heroicons/react/24/outline";
+import AdminLayout from "../../components/admin/AdminLayout";
+import { toast } from "react-hot-toast";
 
 const AdminBookings = () => {
   const dispatch = useDispatch();
-  const { bookings, pagination, isLoading } = useSelector((state) => state.admin);
-  
+  const { bookings, pagination, isLoading } = useSelector(
+    (state) => state.admin
+  );
+
   const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    startDate: '',
-    endDate: '',
+    search: "",
+    status: "",
+    startDate: "",
+    endDate: "",
     page: 1,
-    limit: 10
+    limit: 10,
   });
 
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -49,36 +51,43 @@ const AdminBookings = () => {
   }, [dispatch, filters]);
 
   const handleStatusUpdate = async (bookingId, newStatus) => {
-    if (window.confirm(`Are you sure you want to mark this booking as ${newStatus}?`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to mark this booking as ${newStatus}?`
+      )
+    ) {
       setIsUpdating(true);
       try {
-        await dispatch(updateBookingStatus({ 
-          bookingId, 
-          status: newStatus,
-          reason: newStatus === 'cancelled' ? 'Cancelled by admin' : ''
-        })).unwrap();
-        
+        await dispatch(
+          updateBookingStatus({
+            bookingId,
+            status: newStatus,
+            reason: newStatus === "cancelled" ? "Cancelled by admin" : "",
+          })
+        ).unwrap();
+
         toast.success(`Booking ${newStatus} successfully`);
-        
+
         // Update the selected booking in modal if it's the same booking
         if (selectedBooking && selectedBooking._id === bookingId) {
-          setSelectedBooking(prev => ({
+          setSelectedBooking((prev) => ({
             ...prev,
             status: newStatus,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           }));
         }
-        
+
         // Immediately update the bookings list
         dispatch(fetchAllBookings(filters));
-        
+
         // Close modal if action was successful
-        if (newStatus === 'confirmed' || newStatus === 'cancelled') {
+        if (newStatus === "confirmed" || newStatus === "cancelled") {
           closeModal();
         }
-        
       } catch (error) {
-        toast.error(`Failed to update booking: ${error.message || 'Unknown error'}`);
+        toast.error(
+          `Failed to update booking: ${error.message || "Unknown error"}`
+        );
       } finally {
         setIsUpdating(false);
       }
@@ -86,11 +95,11 @@ const AdminBookings = () => {
   };
 
   const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
+    setFilters((prev) => ({ ...prev, page }));
   };
 
   const openViewModal = (booking) => {
-    console.log('Booking data for modal:', booking);
+    console.log("Booking data for modal:", booking);
     setSelectedBooking(booking);
     setShowViewModal(true);
   };
@@ -102,17 +111,22 @@ const AdminBookings = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: ClockIcon },
-      confirmed: { color: 'bg-green-100 text-green-800', icon: CheckCircleIcon },
-      cancelled: { color: 'bg-red-100 text-red-800', icon: XCircleIcon },
-      completed: { color: 'bg-blue-100 text-blue-800', icon: CheckCircleIcon }
+      pending: { color: "bg-yellow-100 text-yellow-800", icon: ClockIcon },
+      confirmed: {
+        color: "bg-green-100 text-green-800",
+        icon: CheckCircleIcon,
+      },
+      cancelled: { color: "bg-red-100 text-red-800", icon: XCircleIcon },
+      completed: { color: "bg-blue-100 text-blue-800", icon: CheckCircleIcon },
     };
-    
+
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
-    
+
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span
+        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${config.color}`}
+      >
         <Icon className="h-3 w-3 mr-1" />
         {status?.charAt(0).toUpperCase() + status?.slice(1)}
       </span>
@@ -120,30 +134,30 @@ const AdminBookings = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (error) {
-      return 'Invalid Date', error;
+      return "Invalid Date", error;
     }
   };
 
   const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      return new Date(dateString).toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch (error) {
-      return 'Invalid Date', error;
+      return "Invalid Date", error;
     }
   };
 
@@ -160,7 +174,9 @@ const AdminBookings = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Booking Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Booking Management
+          </h1>
           <p className="mt-2 text-gray-600">
             View and manage all bookings on the platform
           </p>
@@ -179,7 +195,13 @@ const AdminBookings = () => {
                   type="text"
                   placeholder="Search by ID, customer, service..."
                   value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      search: e.target.value,
+                      page: 1,
+                    }))
+                  }
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -191,7 +213,13 @@ const AdminBookings = () => {
               </label>
               <select
                 value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    status: e.target.value,
+                    page: 1,
+                  }))
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">All Status</option>
@@ -209,7 +237,13 @@ const AdminBookings = () => {
               <input
                 type="date"
                 value={filters.startDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value, page: 1 }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    startDate: e.target.value,
+                    page: 1,
+                  }))
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
@@ -221,7 +255,13 @@ const AdminBookings = () => {
               <input
                 type="date"
                 value={filters.endDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value, page: 1 }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    endDate: e.target.value,
+                    page: 1,
+                  }))
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
@@ -283,10 +323,14 @@ const AdminBookings = () => {
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {booking.contactPerson?.name || booking.user?.name || 'N/A'}
+                                  {booking.contactPerson?.name ||
+                                    booking.user?.name ||
+                                    "N/A"}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  {booking.contactPerson?.email || booking.user?.email || 'N/A'}
+                                  {booking.contactPerson?.email ||
+                                    booking.user?.email ||
+                                    "N/A"}
                                 </div>
                               </div>
                             </div>
@@ -296,10 +340,11 @@ const AdminBookings = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm">
                               <div className="font-medium text-gray-900">
-                                {booking.service?.title || 'Service Unavailable'}
+                                {booking.service?.title ||
+                                  "Service Unavailable"}
                               </div>
                               <div className="text-gray-500">
-                                {booking.service?.category || 'N/A'}
+                                {booking.service?.category || "N/A"}
                               </div>
                             </div>
                           </td>
@@ -310,7 +355,9 @@ const AdminBookings = () => {
                               ₹{booking.totalPrice || 0}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {pricePerDay > 0 ? `₹${pricePerDay}/day` : 'Price/day not available'}
+                              {pricePerDay > 0
+                                ? `₹${pricePerDay}/day`
+                                : "Price/day not available"}
                             </div>
                           </td>
 
@@ -322,17 +369,22 @@ const AdminBookings = () => {
                           {/* Actions */}
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
-                              <button 
+                              <button
                                 onClick={() => openViewModal(booking)}
                                 className="text-primary-600 hover:text-primary-900 p-1"
                                 title="View Details"
                               >
                                 <EyeIcon className="h-4 w-4" />
                               </button>
-                              {booking.status === 'pending' && (
+                              {booking.status === "pending" && (
                                 <>
                                   <button
-                                    onClick={() => handleStatusUpdate(booking._id, 'confirmed')}
+                                    onClick={() =>
+                                      handleStatusUpdate(
+                                        booking._id,
+                                        "confirmed"
+                                      )
+                                    }
                                     className="text-green-600 hover:text-green-900 p-1 disabled:opacity-50"
                                     title="Confirm Booking"
                                     disabled={isUpdating}
@@ -340,7 +392,12 @@ const AdminBookings = () => {
                                     <CheckCircleIcon className="h-4 w-4" />
                                   </button>
                                   <button
-                                    onClick={() => handleStatusUpdate(booking._id, 'cancelled')}
+                                    onClick={() =>
+                                      handleStatusUpdate(
+                                        booking._id,
+                                        "cancelled"
+                                      )
+                                    }
                                     className="text-red-600 hover:text-red-900 p-1 disabled:opacity-50"
                                     title="Cancel Booking"
                                     disabled={isUpdating}
@@ -348,6 +405,18 @@ const AdminBookings = () => {
                                     <XCircleIcon className="h-4 w-4" />
                                   </button>
                                 </>
+                              )}
+                              {booking.status === "confirmed" && (
+                                <button
+                                  onClick={() =>
+                                    handleStatusUpdate(booking._id, "completed")
+                                  }
+                                  className="text-blue-600 hover:text-blue-900 p-1 disabled:opacity-50"
+                                  title="Mark as Completed"
+                                  disabled={isUpdating}
+                                >
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -401,8 +470,18 @@ const AdminBookings = () => {
                   disabled={isUpdating}
                 >
                   <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -445,10 +524,14 @@ const AdminBookings = () => {
                         </div>
                         <div className="ml-4">
                           <div className="font-medium text-gray-900">
-                            {selectedBooking.contactPerson?.name || selectedBooking.user?.name || 'N/A'}
+                            {selectedBooking.contactPerson?.name ||
+                              selectedBooking.user?.name ||
+                              "N/A"}
                           </div>
                           <div className="text-sm text-gray-600">
-                            {selectedBooking.contactPerson?.email || selectedBooking.user?.email || 'N/A'}
+                            {selectedBooking.contactPerson?.email ||
+                              selectedBooking.user?.email ||
+                              "N/A"}
                           </div>
                         </div>
                       </div>
@@ -456,15 +539,27 @@ const AdminBookings = () => {
                         <div className="flex items-center">
                           <EnvelopeIcon className="h-4 w-4 text-gray-400 mr-2" />
                           <div>
-                            <div className="text-sm text-gray-600">Contact Email</div>
-                            <div className="font-medium">{selectedBooking.contactPerson?.email || selectedBooking.user?.email || 'N/A'}</div>
+                            <div className="text-sm text-gray-600">
+                              Contact Email
+                            </div>
+                            <div className="font-medium">
+                              {selectedBooking.contactPerson?.email ||
+                                selectedBooking.user?.email ||
+                                "N/A"}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center">
                           <PhoneIcon className="h-4 w-4 text-gray-400 mr-2" />
                           <div>
-                            <div className="text-sm text-gray-600">Contact Phone</div>
-                            <div className="font-medium">{selectedBooking.contactPerson?.phone || selectedBooking.user?.phone || 'N/A'}</div>
+                            <div className="text-sm text-gray-600">
+                              Contact Phone
+                            </div>
+                            <div className="font-medium">
+                              {selectedBooking.contactPerson?.phone ||
+                                selectedBooking.user?.phone ||
+                                "N/A"}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -480,13 +575,14 @@ const AdminBookings = () => {
                     <div className="space-y-4">
                       <div className="flex items-center">
                         {selectedBooking.service?.images?.[0] ? (
-                          <img 
-                            src={selectedBooking.service.images[0]} 
+                          <img
+                            src={selectedBooking.service.images[0]}
                             alt={selectedBooking.service.title}
                             className="h-16 w-16 rounded-lg object-cover mr-4"
                             onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.parentElement.innerHTML = '<div class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center mr-4"><BuildingStorefrontIcon class="h-8 w-8 text-gray-600" /></div>';
+                              e.target.style.display = "none";
+                              e.target.parentElement.innerHTML =
+                                '<div class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center mr-4"><BuildingStorefrontIcon class="h-8 w-8 text-gray-600" /></div>';
                             }}
                           />
                         ) : (
@@ -496,10 +592,11 @@ const AdminBookings = () => {
                         )}
                         <div>
                           <div className="font-medium text-gray-900">
-                            {selectedBooking.service?.title || 'Service Unavailable'}
+                            {selectedBooking.service?.title ||
+                              "Service Unavailable"}
                           </div>
                           <div className="text-sm text-gray-600">
-                            {selectedBooking.service?.category || 'N/A'}
+                            {selectedBooking.service?.category || "N/A"}
                           </div>
                         </div>
                       </div>
@@ -507,15 +604,23 @@ const AdminBookings = () => {
                         <div className="flex items-center">
                           <MapPinIcon className="h-4 w-4 text-gray-400 mr-2" />
                           <div>
-                            <div className="text-sm text-gray-600">Location</div>
-                            <div className="font-medium">{selectedBooking.service?.location || 'N/A'}</div>
+                            <div className="text-sm text-gray-600">
+                              Location
+                            </div>
+                            <div className="font-medium">
+                              {selectedBooking.service?.location || "N/A"}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center">
                           <TagIcon className="h-4 w-4 text-gray-400 mr-2" />
                           <div>
-                            <div className="text-sm text-gray-600">Category</div>
-                            <div className="font-medium">{selectedBooking.service?.category || 'N/A'}</div>
+                            <div className="text-sm text-gray-600">
+                              Category
+                            </div>
+                            <div className="font-medium">
+                              {selectedBooking.service?.category || "N/A"}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -531,9 +636,13 @@ const AdminBookings = () => {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <div className="text-sm text-gray-600">Start Date</div>
+                          <div className="text-sm text-gray-600">
+                            Start Date
+                          </div>
                           <div className="font-medium">
-                            {formatDate(selectedBooking.bookingDates?.startDate)}
+                            {formatDate(
+                              selectedBooking.bookingDates?.startDate
+                            )}
                           </div>
                         </div>
                         <div>
@@ -543,7 +652,9 @@ const AdminBookings = () => {
                           </div>
                         </div>
                         <div>
-                          <div className="text-sm text-gray-600">Number of Days</div>
+                          <div className="text-sm text-gray-600">
+                            Number of Days
+                          </div>
                           <div className="font-medium">
                             {selectedBooking.bookingDates?.totalDays || 0}
                           </div>
@@ -556,10 +667,12 @@ const AdminBookings = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {selectedBooking.specialRequirements && (
                         <div>
-                          <div className="text-sm text-gray-600 mb-1">Special Requirements</div>
+                          <div className="text-sm text-gray-600 mb-1">
+                            Special Requirements
+                          </div>
                           <div className="bg-gray-50 p-3 rounded-lg">
                             {selectedBooking.specialRequirements}
                           </div>
@@ -577,10 +690,14 @@ const AdminBookings = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <div className="text-gray-600">Total Days</div>
-                        <div className="font-medium">{selectedBooking.bookingDates?.totalDays || 0}</div>
+                        <div className="font-medium">
+                          {selectedBooking.bookingDates?.totalDays || 0}
+                        </div>
                       </div>
                       <div className="flex justify-between">
-                        <div className="text-gray-600">Price per Day (Calculated)</div>
+                        <div className="text-gray-600">
+                          Price per Day (Calculated)
+                        </div>
                         <div className="font-medium">
                           ₹{getPricePerDay(selectedBooking)}
                         </div>
@@ -593,19 +710,26 @@ const AdminBookings = () => {
                       </div>
                       {selectedBooking.paymentStatus && (
                         <div className="pt-2">
-                          <div className="text-sm text-gray-600">Payment Status</div>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            selectedBooking.paymentStatus === 'paid' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {selectedBooking.paymentStatus?.toUpperCase() || 'PENDING'}
+                          <div className="text-sm text-gray-600">
+                            Payment Status
+                          </div>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              selectedBooking.paymentStatus === "paid"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {selectedBooking.paymentStatus?.toUpperCase() ||
+                              "PENDING"}
                           </span>
                         </div>
                       )}
                       {selectedBooking.cancellationReason && (
                         <div className="pt-2">
-                          <div className="text-sm text-gray-600">Cancellation Reason</div>
+                          <div className="text-sm text-gray-600">
+                            Cancellation Reason
+                          </div>
                           <div className="text-sm font-medium text-red-600">
                             {selectedBooking.cancellationReason}
                           </div>
@@ -625,25 +749,35 @@ const AdminBookings = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <div className="text-sm text-gray-600">Booking ID</div>
-                        <div className="font-medium text-xs">{selectedBooking._id}</div>
+                        <div className="font-medium text-xs">
+                          {selectedBooking._id}
+                        </div>
                       </div>
                       <div>
                         <div className="text-sm text-gray-600">Created At</div>
-                        <div className="font-medium">{formatDateTime(selectedBooking.createdAt)}</div>
+                        <div className="font-medium">
+                          {formatDateTime(selectedBooking.createdAt)}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-sm text-gray-600">Last Updated</div>
-                        <div className="font-medium">{formatDateTime(selectedBooking.updatedAt)}</div>
+                        <div className="text-sm text-gray-600">
+                          Last Updated
+                        </div>
+                        <div className="font-medium">
+                          {formatDateTime(selectedBooking.updatedAt)}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Action Buttons - Only show for pending bookings */}
-                {selectedBooking.status === 'pending' && (
+                {selectedBooking.status === "pending" && (
                   <div className="border-t pt-6 flex justify-end space-x-4">
                     <button
-                      onClick={() => handleStatusUpdate(selectedBooking._id, 'cancelled')}
+                      onClick={() =>
+                        handleStatusUpdate(selectedBooking._id, "cancelled")
+                      }
                       className="px-6 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isUpdating}
                     >
@@ -660,7 +794,9 @@ const AdminBookings = () => {
                       )}
                     </button>
                     <button
-                      onClick={() => handleStatusUpdate(selectedBooking._id, 'confirmed')}
+                      onClick={() =>
+                        handleStatusUpdate(selectedBooking._id, "confirmed")
+                      }
                       className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isUpdating}
                     >
@@ -673,6 +809,29 @@ const AdminBookings = () => {
                         <>
                           <CheckCircleIcon className="h-4 w-4 mr-2" />
                           Confirm Booking
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+                {selectedBooking.status === "confirmed" && (
+                  <div className="border-t pt-6 flex justify-end space-x-4">
+                    <button
+                      onClick={() =>
+                        handleStatusUpdate(selectedBooking._id, "completed")
+                      }
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <>
+                          <LoadingSpinner size="sm" className="mr-2" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircleIcon className="h-4 w-4 mr-2" />
+                          Mark as Completed
                         </>
                       )}
                     </button>

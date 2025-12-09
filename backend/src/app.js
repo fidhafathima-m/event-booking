@@ -14,8 +14,6 @@ import adminRoutes from "./routes/adminRoutes.js"
 
 const app = express();
 
-app.set('trust proxy', true);
-
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:5173",
@@ -31,15 +29,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 100, // limit each IP to 100 request
-});
-
-app.use("/api/", limiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
