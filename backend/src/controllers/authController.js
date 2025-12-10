@@ -196,49 +196,64 @@ export const getMe = async (req, res, next) => {
   }
 };
 
-// authController.js - Update the updateProfile function
 export const updateProfile = async (req, res, next) => {
   try {
-    const { name, phone, password } = req.body;
+    const { name, phone, currentPassword, newPassword } = req.cleanedData; // Use cleanedData from validation middleware
     const userId = req.user.id;
 
-    // Find user
     const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res.status(404).json(
+        ApiResponse.error("User not found", 404)
+      );
+    }
 
-    // fields to update
-    const updateFields = {};
-    if (name) updateFields.name = name;
-    if (phone) updateFields.phone = phone;
+    // Build update object with only provided fields
+    const updateData = {};
     
-    // Handle password update
-    if (password) {
-      // Validate password length
-      if (password.length < 6) {
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+    
+    if (phone !== undefined) {
+      updateData.phone = phone; // Will be null if cleared
+    }
+
+    // Handle password change
+    if (newPassword) {
+      // Verify current password
+      const isPasswordValid = await user.comparePassword(currentPassword);
+      if (!isPasswordValid) {
         return res.status(400).json(
-          ApiResponse.error("Password must be at least 6 characters", 400)
+          ApiResponse.error("Current password is incorrect", 400)
         );
       }
       
-      // Set the new password (the model's pre-save will hash it)
-      user.password = password;
+      // Set new password
+      user.password = newPassword;
       await user.save();
     }
 
-    // Update other fields
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updateFields,
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).select("-password");
+    // Update other fields if any
+    if (Object.keys(updateData).length > 0) {
+      await User.findByIdAndUpdate(
+        userId,
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+    }
 
-    res
-      .status(200)
-      .json(ApiResponse.success("Profile updated successfully", { 
-        user: password ? user.toObject() : updatedUser 
-      }));
+    // Get updated user
+    const updatedUser = await User.findById(userId).select("-password");
+    
+    res.status(200).json(
+      ApiResponse.success("Profile updated successfully", { 
+        user: updatedUser 
+      })
+    );
   } catch (error) {
     next(error);
   }

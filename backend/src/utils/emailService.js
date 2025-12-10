@@ -16,7 +16,6 @@ const verifySendGrid = async () => {
       text: 'SendGrid is working correctly!',
     });
     console.log('SendGrid is ready to send emails');
-    console.log('Test email sent:', response);
     return true;
   } catch (error) {
     console.error('SendGrid verification failed:', error);
