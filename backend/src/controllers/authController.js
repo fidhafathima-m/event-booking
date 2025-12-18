@@ -1,7 +1,11 @@
 import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 import { sendOTPEmail, sendWelcomeEmail } from "../utils/emailService.js";
 import { storeOTP, verifyOTP, resendOTP } from "../utils/otpCache.js";
-import { generateToken } from "../utils/generateToken.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../utils/generateToken.js";
 import { ApiResponse } from "../utils/responseHandler.js";
 
 export const register = async (req, res, next) => {
@@ -34,19 +38,16 @@ export const register = async (req, res, next) => {
     try {
       await sendOTPEmail(email, otp, name);
     } catch (emailError) {
-      return res.status(500).json(
-        ApiResponse.error("Failed to send verification email", 500)
-      );
+      return res
+        .status(500)
+        .json(ApiResponse.error("Failed to send verification email", 500));
     }
 
     res.status(200).json(
-      ApiResponse.success(
-        "OTP sent to email",
-        { 
-          email: email,
-          message: "Please check your email for verification OTP" 
-        }
-      )
+      ApiResponse.success("OTP sent to email", {
+        email: email,
+        message: "Please check your email for verification OTP",
+      })
     );
   } catch (error) {
     next(error);
@@ -59,11 +60,11 @@ export const verifyOTPController = async (req, res, next) => {
 
     // Verify OTP from cache
     const verificationResult = verifyOTP(email, otp);
-    
+
     if (!verificationResult.valid) {
-      return res.status(400).json(
-        ApiResponse.error(verificationResult.error, 400)
-      );
+      return res
+        .status(400)
+        .json(ApiResponse.error(verificationResult.error, 400));
     }
 
     // Create user in database after OTP verification
@@ -77,7 +78,12 @@ export const verifyOTPController = async (req, res, next) => {
     });
 
     // Generate token
-    const token = generateToken(user._id);
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    // Store refresh token in user's document
+    user.refreshTokens.push({ token: refreshToken });
+    await user.save();
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -88,18 +94,21 @@ export const verifyOTPController = async (req, res, next) => {
       console.error("Failed to send welcome email:", emailError);
     });
 
-    res.status(201).json(
-      ApiResponse.success(
-        "Email verified successfully",
-        { token, user: userResponse },
-        201
-      )
-    );
-  } catch (error) {
-    if (error.code === 11000) { // Duplicate key error
-      return res.status(400).json(
-        ApiResponse.error("User already exists", 400)
+    res
+      .status(201)
+      .json(
+        ApiResponse.success(
+          "Email verified successfully",
+          { accessToken, refreshToken, user: userResponse },
+          201
+        )
       );
+  } catch (error) {
+    if (error.code === 11000) {
+      // Duplicate key error
+      return res
+        .status(400)
+        .json(ApiResponse.error("User already exists", 400));
     }
     next(error);
   }
@@ -111,33 +120,28 @@ export const resendOTPController = async (req, res, next) => {
 
     // Resend OTP
     const result = resendOTP(email);
-    
+
     if (!result.success) {
-      return res.status(400).json(
-        ApiResponse.error(result.error, 400)
-      );
+      return res.status(400).json(ApiResponse.error(result.error, 400));
     }
 
     // Get user data to resend email
     const userData = getRegistrationData(email);
-    
+
     // Send new OTP email
     try {
       await sendOTPEmail(email, result.otp, userData.name);
     } catch (emailError) {
-      return res.status(500).json(
-        ApiResponse.error("Failed to resend OTP email", 500)
-      );
+      return res
+        .status(500)
+        .json(ApiResponse.error("Failed to resend OTP email", 500));
     }
 
     res.status(200).json(
-      ApiResponse.success(
-        "OTP resent successfully",
-        { 
-          email: email,
-          message: "New OTP sent to your email" 
-        }
-      )
+      ApiResponse.success("OTP resent successfully", {
+        email: email,
+        message: "New OTP sent to your email",
+      })
     );
   } catch (error) {
     next(error);
@@ -151,35 +155,41 @@ export const login = async (req, res, next) => {
     // check for user email
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return res.status(401).json(ApiResponse.error("Invalid credentials", 401));
+      return res
+        .status(401)
+        .json(ApiResponse.error("Invalid credentials", 401));
     }
 
     // Check if email is verified
     if (!user.isEmailVerified) {
-      return res.status(401).json(
-        ApiResponse.error("Please verify your email first", 401)
-      );
+      return res
+        .status(401)
+        .json(ApiResponse.error("Please verify your email first", 401));
     }
 
     // check password
     const isMatchPassword = await user.comparePassword(password);
     if (!isMatchPassword) {
-      return res.status(401).json(ApiResponse.error("Invalid credentials", 401));
+      return res
+        .status(401)
+        .json(ApiResponse.error("Invalid credentials", 401));
     }
 
     // generate token
-    const token = generateToken(user._id);
+    const token = generateAccessToken(user._id);
 
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    res.status(200).json(
-      ApiResponse.success(
-        "Login successful",
-        { token, user: userResponse },
-        200
-      )
-    );
+    res
+      .status(200)
+      .json(
+        ApiResponse.success(
+          "Login successful",
+          { token, user: userResponse },
+          200
+        )
+      );
   } catch (error) {
     next(error);
   }
@@ -203,18 +213,16 @@ export const updateProfile = async (req, res, next) => {
 
     const user = await User.findById(userId).select("+password");
     if (!user) {
-      return res.status(404).json(
-        ApiResponse.error("User not found", 404)
-      );
+      return res.status(404).json(ApiResponse.error("User not found", 404));
     }
 
     // Build update object with only provided fields
     const updateData = {};
-    
+
     if (name !== undefined) {
       updateData.name = name;
     }
-    
+
     if (phone !== undefined) {
       updateData.phone = phone; // Will be null if cleared
     }
@@ -224,11 +232,11 @@ export const updateProfile = async (req, res, next) => {
       // Verify current password
       const isPasswordValid = await user.comparePassword(currentPassword);
       if (!isPasswordValid) {
-        return res.status(400).json(
-          ApiResponse.error("Current password is incorrect", 400)
-        );
+        return res
+          .status(400)
+          .json(ApiResponse.error("Current password is incorrect", 400));
       }
-      
+
       // Set new password
       user.password = newPassword;
       await user.save();
@@ -236,22 +244,76 @@ export const updateProfile = async (req, res, next) => {
 
     // Update other fields if any
     if (Object.keys(updateData).length > 0) {
-      await User.findByIdAndUpdate(
-        userId,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+      await User.findByIdAndUpdate(userId, updateData, {
+        new: true,
+        runValidators: true,
+      });
     }
 
     // Get updated user
     const updatedUser = await User.findById(userId).select("-password");
-    
+
     res.status(200).json(
-      ApiResponse.success("Profile updated successfully", { 
-        user: updatedUser 
+      ApiResponse.success("Profile updated successfully", {
+        user: updatedUser,
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res
+        .status(401)
+        .json(ApiResponse.error("Refresh token is required", 401));
+    }
+
+    // verify refreshToken
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    } catch (error) {
+      return res
+        .status(403)
+        .json(ApiResponse.error("Invalid or expired refresh token", 403));
+    }
+
+    // Find user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json(ApiResponse.error("User not found", 404));
+    }
+
+    // check if the refreshtoken exists there
+    const tokenExists = user.refreshTokens.some(
+      (tokenObj) => tokenObj.token === refreshToken
+    );
+    if (!tokenExists) {
+      return res
+        .status(403)
+        .json(ApiResponse.error("Refresh token is not valid", 403));
+    }
+
+    // generate new tokens
+    const newAccessToken = generateAccessToken(user._id);
+    const newRefreshToken = generateRefreshToken(user._id);
+
+    // Remove old refresh token and add new one
+    user.refreshTokens = user.refreshTokens.filter(
+      (tokenObj) => tokenObj.token !== refreshToken
+    );
+    user.refreshTokens.push({ token: newRefreshToken });
+    await user.save();
+
+    res.status(200).json(
+      ApiResponse.success("Tokens refreshed successfully", {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
       })
     );
   } catch (error) {
@@ -261,7 +323,30 @@ export const updateProfile = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
+    const { refreshToken } = req.body;
+    const user = await User.findById(req.user.id);
+    
+    if (refreshToken) {
+      // Remove specific refresh token
+      user.refreshTokens = user.refreshTokens.filter(
+        tokenObj => tokenObj.token !== refreshToken
+      );
+      await user.save();
+    }
+    
     res.status(200).json(ApiResponse.success("Logged out successfully"));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logoutAll = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    user.refreshTokens = [];
+    await user.save();
+
+    res.status(200).json(ApiResponse.success("Logged out from all devices"));
   } catch (error) {
     next(error);
   }

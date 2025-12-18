@@ -1,68 +1,91 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { registerStep1 } from '../store/slices/authSlice';
-import Layout from '../components/common/Layout';
-import { toast } from 'react-hot-toast';
-import { checkPasswordStrength, validateEmail, validateName, validatePassword, validatePhone } from '../utils/validators';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { registerStep1 } from "../store/slices/authSlice";
+import Layout from "../components/common/Layout";
+import { toast } from "react-hot-toast";
+import {
+  checkPasswordStrength,
+  validateEmail,
+  validateName,
+  validatePassword,
+  validatePhone,
+} from "../utils/validators";
 
 const RegisterStep1 = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
   });
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({
     score: 0,
-    message: '',
-    color: 'text-gray-500',
+    message: "",
+    color: "text-gray-500",
   });
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const validateForm = () => {
+    const { name, email, password, phone, confirmPassword } = formData;
     const newErrors = {};
-    
-    // Validate each field
-    newErrors.name = validateName(name);
-    newErrors.email = validateEmail(email);
-    newErrors.password = validatePassword(password);
-    newErrors.phone = validatePhone(phone);
-    
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+
+    // Validate name (returns string error or empty string)
+    const nameError = validateName(name, true);
+    if (nameError) {
+      newErrors.name = nameError;
     }
-    
-    // Filter out empty error messages
-    const filteredErrors = Object.fromEntries(
-      Object.entries(newErrors).filter(([, value]) => value !== '')
-    );
-    
-    setErrors(filteredErrors);
-    return Object.keys(filteredErrors).length === 0;
+
+    // Validate email (returns string error or empty string)
+    const emailError = validateEmail(email, true);
+    if (emailError) {
+      newErrors.email = emailError;
+    }
+
+    // Validate password (returns string error or empty string)
+    const passwordError = validatePassword(password, {
+      personalInfo: { name, email },
+    });
+    if (passwordError) {
+      newErrors.password = passwordError;
+    }
+
+    // Validate phone (returns string error or empty string)
+    const phoneError = validatePhone(phone, false);
+    if (phoneError) {
+      newErrors.phone = phoneError;
+    }
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    
+
     setFormData((prevState) => ({
       ...prevState,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    
+
     // Check password strength in real-time
-    if (name === 'password') {
+    if (name === "password") {
       setPasswordStrength(checkPasswordStrength(value));
     }
   };
@@ -70,12 +93,12 @@ const RegisterStep1 = () => {
   // Format phone number as user types
   const onPhoneChange = (e) => {
     let value = e.target.value;
-    
+
     // Remove all non-digit characters except leading +
-    const cleaned = value.replace(/[^\d+]/g, '');
-    
+    const cleaned = value.replace(/[^\d+]/g, "");
+
     // If it starts with +, preserve it
-    if (cleaned.startsWith('+')) {
+    if (cleaned.startsWith("+")) {
       // Format: +X (XXX) XXX-XXXX
       const match = cleaned.match(/^\+(\d{1,3})(\d{0,3})(\d{0,3})(\d{0,4})$/);
       if (match) {
@@ -90,57 +113,62 @@ const RegisterStep1 = () => {
       const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
       if (match) {
         const [, area, prefix, line] = match;
-        value = '';
+        value = "";
         if (area) value = `(${area}`;
         if (prefix) value += `) ${prefix}`;
         if (line) value += `-${line}`;
       }
     }
-    
-    onChange({ target: { name: 'phone', value } });
+
+    onChange({ target: { name: "phone", value } });
   };
 
   // Format name with proper capitalization
   const onNameChange = (e) => {
     let value = e.target.value;
-    
+
     // Only format if not typing in the middle
     if (e.target.selectionStart === value.length) {
       // Capitalize first letter of each word
       value = value
         .toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
     }
-    
-    onChange({ target: { name: 'name', value } });
+
+    onChange({ target: { name: "name", value } });
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
+
+    const isValid = validateForm();
+
+    if (!isValid) {
+      toast.error("Please fix the form errors");
+      return;
+    }
 
     setIsLoading(true);
 
     const userData = {
-      name: name.trim().replace(/\s+/g, ' '),
+      name: name.trim().replace(/\s+/g, " "),
       email: email.trim().toLowerCase(),
       password,
-      phone: phone.replace(/\D/g, ''), // Store only digits
+      phone: phone.replace(/\D/g, ""), // Store only digits
     };
 
     try {
       const result = await dispatch(registerStep1(userData)).unwrap();
-      toast.success('OTP sent to your email!');
-      navigate('/verify-email', { 
-        state: { 
-          email: result.data.email
-        } 
+      toast.success("OTP sent to your email!");
+      navigate("/verify-email", {
+        state: {
+          email: result.data.email,
+        },
       });
     } catch (error) {
-      toast.error(error.message || 'Registration failed');
+      toast.error(error.message || "Registration failed");
     } finally {
       setIsLoading(false);
     }
@@ -157,8 +185,11 @@ const RegisterStep1 = () => {
               Create your account
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              Or{' '}
-              <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
+              Or{" "}
+              <Link
+                to="/login"
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
                 sign in to existing account
               </Link>
             </p>
@@ -166,7 +197,10 @@ const RegisterStep1 = () => {
           <form className="mt-8 space-y-6" onSubmit={onSubmit}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Full Name *
                 </label>
                 <input
@@ -177,7 +211,7 @@ const RegisterStep1 = () => {
                   value={name}
                   onChange={onNameChange}
                   className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.name ? 'border-red-300' : 'border-gray-300'
+                    errors.name ? "border-red-300" : "border-gray-300"
                   } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
                   placeholder="John Doe"
                   maxLength="50"
@@ -192,7 +226,10 @@ const RegisterStep1 = () => {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email Address *
                 </label>
                 <input
@@ -204,7 +241,7 @@ const RegisterStep1 = () => {
                   value={email}
                   onChange={onChange}
                   className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
+                    errors.email ? "border-red-300" : "border-gray-300"
                   } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
                   placeholder="you@example.com"
                   maxLength="254"
@@ -215,7 +252,10 @@ const RegisterStep1 = () => {
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Phone Number
                 </label>
                 <input
@@ -225,7 +265,7 @@ const RegisterStep1 = () => {
                   value={phone}
                   onChange={onPhoneChange}
                   className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.phone ? 'border-red-300' : 'border-gray-300'
+                    errors.phone ? "border-red-300" : "border-gray-300"
                   } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
                   placeholder="+1 (555) 123-4567"
                   maxLength="20"
@@ -240,7 +280,10 @@ const RegisterStep1 = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Password *
                 </label>
                 <input
@@ -251,7 +294,7 @@ const RegisterStep1 = () => {
                   value={password}
                   onChange={onChange}
                   className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
+                    errors.password ? "border-red-300" : "border-gray-300"
                   } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
                   placeholder="••••••••"
                   maxLength="128"
@@ -266,26 +309,62 @@ const RegisterStep1 = () => {
                       </p>
                     )}
                     <div className="mt-2">
-                      <p className="text-xs font-medium text-gray-700 mb-1">Password Requirements:</p>
+                      <p className="text-xs font-medium text-gray-700 mb-1">
+                        Password Requirements:
+                      </p>
                       <ul className="text-xs text-gray-600 space-y-1">
-                        <li className={`flex items-center ${password.length >= 8 ? 'text-green-600' : ''}`}>
-                          <span className="mr-1">{password.length >= 8 ? '✓' : '○'}</span>
+                        <li
+                          className={`flex items-center ${
+                            password.length >= 8 ? "text-green-600" : ""
+                          }`}
+                        >
+                          <span className="mr-1">
+                            {password.length >= 8 ? "✓" : "○"}
+                          </span>
                           At least 8 characters
                         </li>
-                        <li className={`flex items-center ${/[a-z]/.test(password) ? 'text-green-600' : ''}`}>
-                          <span className="mr-1">{/[a-z]/.test(password) ? '✓' : '○'}</span>
+                        <li
+                          className={`flex items-center ${
+                            /[a-z]/.test(password) ? "text-green-600" : ""
+                          }`}
+                        >
+                          <span className="mr-1">
+                            {/[a-z]/.test(password) ? "✓" : "○"}
+                          </span>
                           1 lowercase letter
                         </li>
-                        <li className={`flex items-center ${/[A-Z]/.test(password) ? 'text-green-600' : ''}`}>
-                          <span className="mr-1">{/[A-Z]/.test(password) ? '✓' : '○'}</span>
+                        <li
+                          className={`flex items-center ${
+                            /[A-Z]/.test(password) ? "text-green-600" : ""
+                          }`}
+                        >
+                          <span className="mr-1">
+                            {/[A-Z]/.test(password) ? "✓" : "○"}
+                          </span>
                           1 uppercase letter
                         </li>
-                        <li className={`flex items-center {/[0-9]/.test(password) ? 'text-green-600' : ''}`}>
-                          <span className="mr-1">{/[0-9]/.test(password) ? '✓' : '○'}</span>
+                        <li
+                          className={`flex items-center {/[0-9]/.test(password) ? 'text-green-600' : ''}`}
+                        >
+                          <span className="mr-1">
+                            {/[0-9]/.test(password) ? "✓" : "○"}
+                          </span>
                           1 number
                         </li>
-                        <li className={`flex items-center ${/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) ? 'text-green-600' : ''}`}>
-                          <span className="mr-1">{/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) ? '✓' : '○'}</span>
+                        <li
+                          className={`flex items-center ${
+                            /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+                              ? "text-green-600"
+                              : ""
+                          }`}
+                        >
+                          <span className="mr-1">
+                            {/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(
+                              password
+                            )
+                              ? "✓"
+                              : "○"}
+                          </span>
                           1 special character
                         </li>
                       </ul>
@@ -295,7 +374,10 @@ const RegisterStep1 = () => {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Confirm Password *
                 </label>
                 <input
@@ -306,13 +388,17 @@ const RegisterStep1 = () => {
                   value={confirmPassword}
                   onChange={onChange}
                   className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                    errors.confirmPassword
+                      ? "border-red-300"
+                      : "border-gray-300"
                   } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
                   placeholder="••••••••"
                   maxLength="128"
                 />
                 {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.confirmPassword}
+                  </p>
                 )}
               </div>
             </div>
@@ -323,7 +409,7 @@ const RegisterStep1 = () => {
                 disabled={isLoading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Sending OTP...' : 'Continue'}
+                {isLoading ? "Sending OTP..." : "Continue"}
               </button>
             </div>
           </form>

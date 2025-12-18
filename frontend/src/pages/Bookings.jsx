@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { 
-  fetchUserBookings, 
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchUserBookings,
   cancelBooking,
-  fetchUpcomingBookings
-} from '../store/slices/bookingSlice';
-import Layout from '../components/common/Layout';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import Pagination from '../components/common/Pagination';
-import { 
+  fetchUpcomingBookings,
+} from "../store/slices/bookingSlice";
+import Layout from "../components/common/Layout";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import Pagination from "../components/common/Pagination";
+import {
   CalendarIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -23,58 +23,58 @@ import {
   EnvelopeIcon,
   TagIcon,
   InformationCircleIcon,
-  UserCircleIcon
-} from '@heroicons/react/24/outline';
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 
 const Bookings = () => {
   const dispatch = useDispatch();
-  const { 
-    bookings, 
-    upcomingBookings, 
-    pagination, 
-    isLoading 
-  } = useSelector((state) => state.bookings);
+  const { bookings, upcomingBookings, pagination, isLoading } = useSelector(
+    (state) => state.bookings
+  );
 
-  const [activeTab, setActiveTab] = useState('upcoming');
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [filters, setFilters] = useState({
-    status: '',
+    status: "",
     page: 1,
-    limit: 10
+    limit: 10,
   });
-  
+
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancellingBookings, setCancellingBookings] = useState({});
 
   useEffect(() => {
-    if (activeTab === 'upcoming') {
+    if (activeTab === "upcoming") {
       dispatch(fetchUpcomingBookings());
     } else {
-      const statusFilter = activeTab === 'all' ? '' : activeTab;
+      const statusFilter = activeTab === "all" ? "" : activeTab;
       dispatch(fetchUserBookings({ ...filters, status: statusFilter }));
     }
   }, [dispatch, activeTab, filters]);
 
   const handleCancelBooking = async (id, reason) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      setIsCancelling(true);
+    if (window.confirm("Are you sure you want to cancel this booking?")) {
+      // Set cancelling state for this specific booking
+      setCancellingBookings((prev) => ({ ...prev, [id]: true }));
+
       try {
         await dispatch(cancelBooking({ id, reason })).unwrap();
         // Refresh bookings after cancellation
-        if (activeTab === 'upcoming') {
+        if (activeTab === "upcoming") {
           dispatch(fetchUpcomingBookings());
         } else {
-          const statusFilter = activeTab === 'all' ? '' : activeTab;
+          const statusFilter = activeTab === "all" ? "" : activeTab;
           dispatch(fetchUserBookings({ ...filters, status: statusFilter }));
         }
       } finally {
-        setIsCancelling(false);
+        // Clear cancelling state for this booking
+        setCancellingBookings((prev) => ({ ...prev, [id]: false }));
       }
     }
   };
 
   const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
+    setFilters((prev) => ({ ...prev, page }));
   };
 
   const openViewModal = (booking) => {
@@ -88,57 +88,57 @@ const Bookings = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (error) {
-      return 'Invalid Date', error;
+      return "Invalid Date", error;
     }
   };
 
   const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      return new Date(dateString).toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch (error) {
-      return 'Invalid Date', error;
+      return "Invalid Date", error;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
+      case "confirmed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'confirmed':
+      case "confirmed":
         return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
-      case 'cancelled':
+      case "cancelled":
         return <XCircleIcon className="h-5 w-5 text-red-500" />;
-      case 'pending':
+      case "pending":
         return <ClockIcon className="h-5 w-5 text-yellow-500" />;
-      case 'completed':
+      case "completed":
         return <CheckCircleIcon className="h-5 w-5 text-blue-500" />;
       default:
         return <ClockIcon className="h-5 w-5 text-gray-500" />;
@@ -146,46 +146,50 @@ const Bookings = () => {
   };
 
   const tabs = [
-    { id: 'upcoming', label: 'Upcoming', icon: CalendarIcon },
-    { id: 'all', label: 'All Bookings', icon: ClockIcon },
-    { id: 'confirmed', label: 'Confirmed', icon: CheckCircleIcon },
-    { id: 'cancelled', label: 'Cancelled', icon: XCircleIcon },
-    { id: 'pending', label: 'Pending', icon: ClockIcon }
+    { id: "upcoming", label: "Upcoming", icon: CalendarIcon },
+    { id: "all", label: "All Bookings", icon: ClockIcon },
+    { id: "confirmed", label: "Confirmed", icon: CheckCircleIcon },
+    { id: "cancelled", label: "Cancelled", icon: XCircleIcon },
+    { id: "pending", label: "Pending", icon: ClockIcon },
   ];
 
   const calculateStats = () => {
     const totalBookings = bookings?.length || 0;
     const upcoming = upcomingBookings?.length || 0;
-    const pending = bookings?.filter(b => b.status === 'pending')?.length || 0;
-    const cancelled = bookings?.filter(b => b.status === 'cancelled')?.length || 0;
-    const confirmed = bookings?.filter(b => b.status === 'confirmed')?.length || 0;
-    const completed = bookings?.filter(b => b.status === 'completed')?.length || 0;
+    const pending =
+      bookings?.filter((b) => b.status === "pending")?.length || 0;
+    const cancelled =
+      bookings?.filter((b) => b.status === "cancelled")?.length || 0;
+    const confirmed =
+      bookings?.filter((b) => b.status === "confirmed")?.length || 0;
+    const completed =
+      bookings?.filter((b) => b.status === "completed")?.length || 0;
 
     return [
-      { 
-        label: 'Total Bookings', 
-        value: totalBookings, 
-        color: 'bg-blue-500',
-        description: `${confirmed} confirmed, ${completed} completed`
+      {
+        label: "Total Bookings",
+        value: totalBookings,
+        color: "bg-blue-500",
+        description: `${confirmed} confirmed, ${completed} completed`,
       },
-      { 
-        label: 'Upcoming', 
-        value: upcoming, 
-        color: 'bg-green-500',
-        description: 'Scheduled events'
+      {
+        label: "Upcoming",
+        value: upcoming,
+        color: "bg-green-500",
+        description: "Scheduled events",
       },
-      { 
-        label: 'Pending', 
-        value: pending, 
-        color: 'bg-yellow-500',
-        description: 'Awaiting confirmation'
+      {
+        label: "Pending",
+        value: pending,
+        color: "bg-yellow-500",
+        description: "Awaiting confirmation",
       },
-      { 
-        label: 'Cancelled', 
-        value: cancelled, 
-        color: 'bg-red-500',
-        description: 'Cancelled bookings'
-      }
+      {
+        label: "Cancelled",
+        value: cancelled,
+        color: "bg-red-500",
+        description: "Cancelled bookings",
+      },
     ];
   };
 
@@ -193,7 +197,7 @@ const Bookings = () => {
 
   // User can only cancel pending bookings
   const canCancelBooking = (booking) => {
-    return booking.status === 'pending';
+    return booking.status === "pending";
   };
 
   return (
@@ -218,8 +222,12 @@ const Bookings = () => {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm text-gray-500">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stat.value}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {stat.description}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -235,14 +243,18 @@ const Bookings = () => {
                     key={tab.id}
                     onClick={() => {
                       setActiveTab(tab.id);
-                      if (tab.id !== 'upcoming') {
-                        setFilters(prev => ({ ...prev, status: tab.id === 'all' ? '' : tab.id, page: 1 }));
+                      if (tab.id !== "upcoming") {
+                        setFilters((prev) => ({
+                          ...prev,
+                          status: tab.id === "all" ? "" : tab.id,
+                          page: 1,
+                        }));
                       }
                     }}
                     className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${
                       activeTab === tab.id
-                        ? 'border-primary-500 text-primary-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? "border-primary-500 text-primary-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
                     <tab.icon className="h-5 w-5 mr-2" />
@@ -261,19 +273,20 @@ const Bookings = () => {
               ) : (
                 <>
                   {/* Upcoming Bookings Table */}
-                  {activeTab === 'upcoming' && (
+                  {activeTab === "upcoming" && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
                         Upcoming Bookings ({upcomingBookings?.length || 0})
                       </h3>
-                      {(!upcomingBookings || upcomingBookings.length === 0) ? (
+                      {!upcomingBookings || upcomingBookings.length === 0 ? (
                         <div className="text-center py-12">
                           <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-gray-900 mb-2">
                             No upcoming bookings
                           </h3>
                           <p className="text-gray-600">
-                            You don't have any upcoming bookings. Start by exploring our services.
+                            You don't have any upcoming bookings. Start by
+                            exploring our services.
                           </p>
                         </div>
                       ) : (
@@ -300,17 +313,21 @@ const Bookings = () => {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                               {upcomingBookings.map((booking) => (
-                                <tr key={booking._id} className="hover:bg-gray-50">
+                                <tr
+                                  key={booking._id}
+                                  className="hover:bg-gray-50"
+                                >
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
                                       {booking.service?.images?.[0] ? (
-                                        <img 
-                                          src={booking.service.images[0]} 
+                                        <img
+                                          src={booking.service.images[0]}
                                           alt={booking.service.title}
                                           className="h-10 w-10 rounded-lg object-cover mr-3"
                                           onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            e.target.parentElement.innerHTML = '<div class="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3"><BuildingStorefrontIcon class="h-5 w-5 text-gray-600" /></div>';
+                                            e.target.style.display = "none";
+                                            e.target.parentElement.innerHTML =
+                                              '<div class="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3"><BuildingStorefrontIcon class="h-5 w-5 text-gray-600" /></div>';
                                           }}
                                         />
                                       ) : (
@@ -320,38 +337,52 @@ const Bookings = () => {
                                       )}
                                       <div>
                                         <div className="text-sm font-medium text-gray-900">
-                                          {booking.service?.title || 'Service Unavailable'}
+                                          {booking.service?.title ||
+                                            "Service Unavailable"}
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                          {booking.service?.category || 'N/A'}
+                                          {booking.service?.category || "N/A"}
                                         </div>
                                       </div>
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900">
-                                      {formatDate(booking.bookingDates?.startDate || booking.startDate)}
+                                      {formatDate(
+                                        booking.bookingDates?.startDate ||
+                                          booking.startDate
+                                      )}
                                     </div>
                                     <div className="text-sm text-gray-500">
-                                      {booking.bookingDates?.totalDays || booking.numberOfDays || 0} day(s)
+                                      {booking.bookingDates?.totalDays ||
+                                        booking.numberOfDays ||
+                                        0}{" "}
+                                      day(s)
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-semibold text-gray-900">
-                                      ₹{booking.totalPrice || booking.totalAmount || 0}
+                                      ₹
+                                      {booking.totalPrice ||
+                                        booking.totalAmount ||
+                                        0}
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
                                       {getStatusIcon(booking.status)}
-                                      <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                                      <span
+                                        className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                          booking.status
+                                        )}`}
+                                      >
                                         {booking.status}
                                       </span>
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div className="flex space-x-2">
-                                      <button 
+                                      <button
                                         onClick={() => openViewModal(booking)}
                                         className="text-primary-600 hover:text-primary-900 p-1"
                                         title="View Details"
@@ -359,11 +390,18 @@ const Bookings = () => {
                                         <EyeIcon className="h-4 w-4" />
                                       </button>
                                       {canCancelBooking(booking) && (
-                                        <button 
-                                          onClick={() => handleCancelBooking(booking._id, 'Cancelled by user')}
+                                        <button
+                                          onClick={() =>
+                                            handleCancelBooking(
+                                              booking._id,
+                                              "Cancelled by user"
+                                            )
+                                          }
                                           className="text-red-600 hover:text-red-900 p-1 disabled:opacity-50"
                                           title="Cancel Booking"
-                                          disabled={isCancelling}
+                                          disabled={
+                                            cancellingBookings[booking._id]
+                                          }
                                         >
                                           <XCircleIcon className="h-4 w-4" />
                                         </button>
@@ -380,16 +418,27 @@ const Bookings = () => {
                   )}
 
                   {/* All Bookings Table */}
-                  {activeTab !== 'upcoming' && (
+                  {activeTab !== "upcoming" && (
                     <div>
                       <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {activeTab === 'all' ? 'All Bookings' : `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Bookings`}
+                          {activeTab === "all"
+                            ? "All Bookings"
+                            : `${
+                                activeTab.charAt(0).toUpperCase() +
+                                activeTab.slice(1)
+                              } Bookings`}
                         </h3>
                         <div className="flex items-center space-x-4">
                           <select
                             value={filters.limit}
-                            onChange={(e) => setFilters(prev => ({ ...prev, limit: e.target.value, page: 1 }))}
+                            onChange={(e) =>
+                              setFilters((prev) => ({
+                                ...prev,
+                                limit: e.target.value,
+                                page: 1,
+                              }))
+                            }
                             className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                           >
                             <option value={10}>10 per page</option>
@@ -399,15 +448,15 @@ const Bookings = () => {
                         </div>
                       </div>
 
-                      {(!bookings || bookings.length === 0) ? (
+                      {!bookings || bookings.length === 0 ? (
                         <div className="text-center py-12">
                           <ClockIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-gray-900 mb-2">
                             No bookings found
                           </h3>
                           <p className="text-gray-600">
-                            {activeTab === 'all' 
-                              ? "You haven't made any bookings yet." 
+                            {activeTab === "all"
+                              ? "You haven't made any bookings yet."
                               : `You don't have any ${activeTab} bookings.`}
                           </p>
                         </div>
@@ -436,17 +485,21 @@ const Bookings = () => {
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
                                 {bookings.map((booking) => (
-                                  <tr key={booking._id} className="hover:bg-gray-50">
+                                  <tr
+                                    key={booking._id}
+                                    className="hover:bg-gray-50"
+                                  >
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="flex items-center">
                                         {booking.service?.images?.[0] ? (
-                                          <img 
-                                            src={booking.service.images[0]} 
+                                          <img
+                                            src={booking.service.images[0]}
                                             alt={booking.service.title}
                                             className="h-10 w-10 rounded-lg object-cover mr-3"
                                             onError={(e) => {
-                                              e.target.style.display = 'none';
-                                              e.target.parentElement.innerHTML = '<div class="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3"><BuildingStorefrontIcon class="h-5 w-5 text-gray-600" /></div>';
+                                              e.target.style.display = "none";
+                                              e.target.parentElement.innerHTML =
+                                                '<div class="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3"><BuildingStorefrontIcon class="h-5 w-5 text-gray-600" /></div>';
                                             }}
                                           />
                                         ) : (
@@ -456,38 +509,52 @@ const Bookings = () => {
                                         )}
                                         <div>
                                           <div className="text-sm font-medium text-gray-900">
-                                            {booking.service?.title || 'Service Unavailable'}
+                                            {booking.service?.title ||
+                                              "Service Unavailable"}
                                           </div>
                                           <div className="text-sm text-gray-500">
-                                            {booking.service?.category || 'N/A'}
+                                            {booking.service?.category || "N/A"}
                                           </div>
                                         </div>
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="text-sm text-gray-900">
-                                        {formatDate(booking.bookingDates?.startDate || booking.startDate)}
+                                        {formatDate(
+                                          booking.bookingDates?.startDate ||
+                                            booking.startDate
+                                        )}
                                       </div>
                                       <div className="text-sm text-gray-500">
-                                        {booking.bookingDates?.totalDays || booking.numberOfDays || 0} day(s)
+                                        {booking.bookingDates?.totalDays ||
+                                          booking.numberOfDays ||
+                                          0}{" "}
+                                        day(s)
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="text-sm font-semibold text-gray-900">
-                                        ₹{booking.totalPrice || booking.totalAmount || 0}
+                                        ₹
+                                        {booking.totalPrice ||
+                                          booking.totalAmount ||
+                                          0}
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="flex items-center">
                                         {getStatusIcon(booking.status)}
-                                        <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                                        <span
+                                          className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                            booking.status
+                                          )}`}
+                                        >
                                           {booking.status}
                                         </span>
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                       <div className="flex space-x-2">
-                                        <button 
+                                        <button
                                           onClick={() => openViewModal(booking)}
                                           className="text-primary-600 hover:text-primary-900 p-1"
                                           title="View Details"
@@ -495,11 +562,16 @@ const Bookings = () => {
                                           <EyeIcon className="h-4 w-4" />
                                         </button>
                                         {canCancelBooking(booking) && (
-                                          <button 
-                                            onClick={() => handleCancelBooking(booking._id, 'Cancelled by user')}
+                                          <button
+                                            onClick={() =>
+                                              handleCancelBooking(
+                                                booking._id,
+                                                "Cancelled by user"
+                                              )
+                                            }
                                             className="text-red-600 hover:text-red-900 p-1 disabled:opacity-50"
                                             title="Cancel Booking"
-                                            disabled={isCancelling}
+                                            disabled={canCancelBooking}
                                           >
                                             <XCircleIcon className="h-4 w-4" />
                                           </button>
@@ -547,8 +619,18 @@ const Bookings = () => {
                   className="text-gray-400 hover:text-gray-500"
                 >
                   <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -564,7 +646,11 @@ const Bookings = () => {
                       <div className="flex items-center mt-2">
                         <div className="flex items-center">
                           {getStatusIcon(selectedBooking.status)}
-                          <span className={`ml-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedBooking.status)}`}>
+                          <span
+                            className={`ml-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                              selectedBooking.status
+                            )}`}
+                          >
                             {selectedBooking.status.toUpperCase()}
                           </span>
                         </div>
@@ -575,7 +661,10 @@ const Bookings = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-3xl font-bold text-gray-900">
-                        ₹{selectedBooking.totalPrice || selectedBooking.totalAmount || 0}
+                        ₹
+                        {selectedBooking.totalPrice ||
+                          selectedBooking.totalAmount ||
+                          0}
                       </div>
                       <div className="text-sm text-gray-500">Total Amount</div>
                     </div>
@@ -591,27 +680,30 @@ const Bookings = () => {
                     </h4>
                     <div className="space-y-4">
                       {selectedBooking.service?.images?.[0] && (
-                        <img 
-                          src={selectedBooking.service.images[0]} 
+                        <img
+                          src={selectedBooking.service.images[0]}
                           alt={selectedBooking.service.title}
                           className="w-full h-48 object-cover rounded-lg"
-                          onError={(e) => e.target.style.display = 'none'}
+                          onError={(e) => (e.target.style.display = "none")}
                         />
                       )}
                       <div>
-                        <h5 className="font-medium text-gray-900">{selectedBooking.service?.title || 'Service Unavailable'}</h5>
+                        <h5 className="font-medium text-gray-900">
+                          {selectedBooking.service?.title ||
+                            "Service Unavailable"}
+                        </h5>
                         <div className="flex items-center mt-1 text-gray-600">
                           <TagIcon className="h-4 w-4 mr-2" />
-                          {selectedBooking.service?.category || 'N/A'}
+                          {selectedBooking.service?.category || "N/A"}
                         </div>
                         <div className="flex items-center mt-1 text-gray-600">
                           <MapPinIcon className="h-4 w-4 mr-2" />
-                          {selectedBooking.service?.location || 'N/A'}
+                          {selectedBooking.service?.location || "N/A"}
                         </div>
                         {selectedBooking.service?.pricePerDay && (
                           <div className="flex items-center mt-1 text-gray-600">
-                            <CurrencyRupeeIcon className="h-4 w-4 mr-2" />
-                            ₹{selectedBooking.service.pricePerDay}/day
+                            <CurrencyRupeeIcon className="h-4 w-4 mr-2" />₹
+                            {selectedBooking.service.pricePerDay}/day
                           </div>
                         )}
                       </div>
@@ -627,36 +719,54 @@ const Bookings = () => {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <div className="text-sm text-gray-600">Start Date</div>
+                          <div className="text-sm text-gray-600">
+                            Start Date
+                          </div>
                           <div className="font-medium">
-                            {formatDate(selectedBooking.bookingDates?.startDate || selectedBooking.startDate)}
+                            {formatDate(
+                              selectedBooking.bookingDates?.startDate ||
+                                selectedBooking.startDate
+                            )}
                           </div>
                         </div>
                         <div>
                           <div className="text-sm text-gray-600">End Date</div>
                           <div className="font-medium">
-                            {formatDate(selectedBooking.bookingDates?.endDate || selectedBooking.endDate)}
+                            {formatDate(
+                              selectedBooking.bookingDates?.endDate ||
+                                selectedBooking.endDate
+                            )}
                           </div>
                         </div>
                         <div>
-                          <div className="text-sm text-gray-600">Number of Days</div>
+                          <div className="text-sm text-gray-600">
+                            Number of Days
+                          </div>
                           <div className="font-medium">
-                            {selectedBooking.bookingDates?.totalDays || selectedBooking.numberOfDays || 0}
+                            {selectedBooking.bookingDates?.totalDays ||
+                              selectedBooking.numberOfDays ||
+                              0}
                           </div>
                         </div>
                         <div>
                           <div className="text-sm text-gray-600">Guests</div>
                           <div className="font-medium">
-                            {selectedBooking.guestsCount || selectedBooking.guestCount || 'N/A'}
+                            {selectedBooking.guestsCount ||
+                              selectedBooking.guestCount ||
+                              "N/A"}
                           </div>
                         </div>
                       </div>
-                      
-                      {(selectedBooking.specialRequirements || selectedBooking.specialRequests) && (
+
+                      {(selectedBooking.specialRequirements ||
+                        selectedBooking.specialRequests) && (
                         <div>
-                          <div className="text-sm text-gray-600 mb-1">Special Requirements</div>
+                          <div className="text-sm text-gray-600 mb-1">
+                            Special Requirements
+                          </div>
                           <div className="bg-gray-50 p-3 rounded-lg">
-                            {selectedBooking.specialRequirements || selectedBooking.specialRequests}
+                            {selectedBooking.specialRequirements ||
+                              selectedBooking.specialRequests}
                           </div>
                         </div>
                       )}
@@ -675,7 +785,9 @@ const Bookings = () => {
                         <div>
                           <div className="text-sm text-gray-600">Email</div>
                           <div className="font-medium">
-                            {selectedBooking.contactPerson?.email || selectedBooking.contactEmail || 'N/A'}
+                            {selectedBooking.contactPerson?.email ||
+                              selectedBooking.contactEmail ||
+                              "N/A"}
                           </div>
                         </div>
                       </div>
@@ -684,14 +796,20 @@ const Bookings = () => {
                         <div>
                           <div className="text-sm text-gray-600">Phone</div>
                           <div className="font-medium">
-                            {selectedBooking.contactPerson?.phone || selectedBooking.contactPhone || 'N/A'}
+                            {selectedBooking.contactPerson?.phone ||
+                              selectedBooking.contactPhone ||
+                              "N/A"}
                           </div>
                         </div>
                       </div>
                       {selectedBooking.contactPerson?.name && (
                         <div>
-                          <div className="text-sm text-gray-600">Contact Person</div>
-                          <div className="font-medium">{selectedBooking.contactPerson.name}</div>
+                          <div className="text-sm text-gray-600">
+                            Contact Person
+                          </div>
+                          <div className="font-medium">
+                            {selectedBooking.contactPerson.name}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -706,27 +824,43 @@ const Bookings = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <div className="text-gray-600">Service Fee per Day</div>
-                        <div className="font-medium">₹{selectedBooking.service?.pricePerDay || 0}</div>
+                        <div className="font-medium">
+                          ₹{selectedBooking.service?.pricePerDay || 0}
+                        </div>
                       </div>
                       <div className="flex justify-between">
                         <div className="text-gray-600">Number of Days</div>
-                        <div className="font-medium">{selectedBooking.bookingDates?.totalDays || selectedBooking.numberOfDays || 0}</div>
+                        <div className="font-medium">
+                          {selectedBooking.bookingDates?.totalDays ||
+                            selectedBooking.numberOfDays ||
+                            0}
+                        </div>
                       </div>
                       <div className="border-t pt-3">
                         <div className="flex justify-between text-lg font-bold">
                           <div>Total Amount</div>
-                          <div>₹{selectedBooking.totalPrice || selectedBooking.totalAmount || 0}</div>
+                          <div>
+                            ₹
+                            {selectedBooking.totalPrice ||
+                              selectedBooking.totalAmount ||
+                              0}
+                          </div>
                         </div>
                       </div>
                       {selectedBooking.paymentStatus && (
                         <div className="pt-2">
-                          <div className="text-sm text-gray-600">Payment Status</div>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            selectedBooking.paymentStatus === 'paid' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {selectedBooking.paymentStatus?.toUpperCase() || 'PENDING'}
+                          <div className="text-sm text-gray-600">
+                            Payment Status
+                          </div>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              selectedBooking.paymentStatus === "paid"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {selectedBooking.paymentStatus?.toUpperCase() ||
+                              "PENDING"}
                           </span>
                         </div>
                       )}
@@ -744,32 +878,43 @@ const Bookings = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <div className="text-sm text-gray-600">Booking ID</div>
-                        <div className="font-medium text-xs">{selectedBooking._id}</div>
+                        <div className="font-medium text-xs">
+                          {selectedBooking._id}
+                        </div>
                       </div>
                       <div>
                         <div className="text-sm text-gray-600">Created At</div>
-                        <div className="font-medium">{formatDateTime(selectedBooking.createdAt)}</div>
+                        <div className="font-medium">
+                          {formatDateTime(selectedBooking.createdAt)}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-sm text-gray-600">Last Updated</div>
-                        <div className="font-medium">{formatDateTime(selectedBooking.updatedAt)}</div>
+                        <div className="text-sm text-gray-600">
+                          Last Updated
+                        </div>
+                        <div className="font-medium">
+                          {formatDateTime(selectedBooking.updatedAt)}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Action Buttons - Only show for pending bookings */}
-                {selectedBooking.status === 'pending' && (
+                {selectedBooking.status === "pending" && (
                   <div className="border-t pt-6 flex justify-end space-x-4">
                     <button
                       onClick={() => {
-                        handleCancelBooking(selectedBooking._id, 'Cancelled by user');
+                        handleCancelBooking(
+                          selectedBooking._id,
+                          "Cancelled by user"
+                        );
                         closeModal();
                       }}
                       className="px-6 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 flex items-center disabled:opacity-50"
-                      disabled={isCancelling}
+                      disabled={cancellingBookings[selectedBooking._id]} // Check for specific booking
                     >
-                      {isCancelling ? (
+                      {cancellingBookings[selectedBooking._id] ? (
                         <>
                           <LoadingSpinner size="sm" className="mr-2" />
                           Cancelling...

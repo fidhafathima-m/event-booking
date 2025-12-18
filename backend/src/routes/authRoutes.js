@@ -3,6 +3,8 @@ import {
   getMe,
   login,
   logout,
+  logoutAll,
+  refreshToken,
   register,
   resendOTPController,
   updateProfile,
@@ -25,5 +27,7 @@ router.post("/login", validateLogin, login);
 router.get("/me", protect, getMe);
 router.put("/update-profile", protect, validateProfileUpdate, updateProfile);
 router.post("/logout", protect, logout);
+router.post("/refresh-token", refreshToken);
+router.post("/logout-all", protect, logoutAll);
 
 export default router;

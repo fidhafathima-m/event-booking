@@ -6,27 +6,36 @@ import {
 } from "./validators.js";
 
 export const validateRegistration = (req, res, next) => {
+  
   const { name, email, password, phone } = req.body;
+  
   const errors = {};
 
   // Validate each field
   const nameValidation = validateName(name, true);
-  if (!nameValidation.isValid) errors.name = nameValidation.error;
+  if (!nameValidation.isValid) {
+    errors.name = nameValidation.error;
+  }
 
   const emailValidation = validateEmail(email, true);
-  if (!emailValidation.isValid) errors.email = emailValidation.error;
+  if (!emailValidation.isValid) {
+    errors.email = emailValidation.error;
+  }
 
   const passwordValidation = validatePassword(password, {
-    personalInfo: { name, email },
+    personalInfo: { name, email }
   });
-  if (!passwordValidation.isValid) errors.password = passwordValidation.error;
+  if (!passwordValidation.isValid) {
+    errors.password = passwordValidation.error;
+  }
 
-  if (phone) {
-    const phoneValidation = validatePhone(phone, false);
-    if (!phoneValidation.isValid) errors.phone = phoneValidation.error;
+  const phoneValidation = validatePhone(phone, false);
+  if (!phoneValidation.isValid) {
+    errors.phone = phoneValidation.error;
   }
 
   if (Object.keys(errors).length > 0) {
+    console.log("Returning 400 with validation errors");
     return res.status(400).json({
       success: false,
       message: "Validation failed",
@@ -39,7 +48,7 @@ export const validateRegistration = (req, res, next) => {
     name: nameValidation.cleanValue,
     email: emailValidation.cleanValue,
     password: password,
-    phone: phone ? phoneValidation.cleanValue : null,
+    phone: phoneValidation.cleanValue,
   };
 
   next();

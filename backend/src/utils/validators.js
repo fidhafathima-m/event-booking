@@ -42,17 +42,28 @@ export const checkPasswordStrength = (password) => {
 };
 
 // Enhanced email validation
-export const validateEmail = (email) => {
-  if (!email.trim()) return "Email is required";
+export const validateEmail = (email, isRequired = true) => {
+  if (!email && !isRequired) {
+    return { isValid: true, cleanValue: "" };
+  }
+  
+  if (!email || !email.trim()) {
+    return { isValid: false, error: "Email is required" };
+  }
 
+  const cleanEmail = email.trim().toLowerCase();
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  if (!emailRegex.test(email)) return "Please enter a valid email address";
+  if (!emailRegex.test(cleanEmail)) {
+    return { isValid: false, error: "Please enter a valid email address" };
+  }
 
   // Check email length
-  if (email.length > 254) return "Email is too long";
+  if (cleanEmail.length > 254) {
+    return { isValid: false, error: "Email is too long" };
+  }
 
-  return "";
+  return { isValid: true, cleanValue: cleanEmail };
 };
 
 
@@ -145,36 +156,36 @@ export const validatePassword = (password, options = {}) => {
   const { personalInfo = {} } = options;
   
   if (!password) {
-    return { isValid: false, error: "Password is required" };
+    return { isValid: false, error: "Password is required", cleanValue: null };
   }
 
   if (password.length < 8) {
-    return { isValid: false, error: "Password must be at least 8 characters" };
+    return { isValid: false, error: "Password must be at least 8 characters", cleanValue: null };
   }
   
   if (password.length > 128) {
-    return { isValid: false, error: "Password cannot exceed 128 characters" };
+    return { isValid: false, error: "Password cannot exceed 128 characters", cleanValue: null };
   }
 
   if (!/[a-z]/.test(password)) {
-    return { isValid: false, error: "Password must contain at least one lowercase letter" };
+    return { isValid: false, error: "Password must contain at least one lowercase letter", cleanValue: null };
   }
   
   if (!/[A-Z]/.test(password)) {
-    return { isValid: false, error: "Password must contain at least one uppercase letter" };
+    return { isValid: false, error: "Password must contain at least one uppercase letter", cleanValue: null };
   }
   
   if (!/[0-9]/.test(password)) {
-    return { isValid: false, error: "Password must contain at least one number" };
+    return { isValid: false, error: "Password must contain at least one number", cleanValue: null };
   }
   
   if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
-    return { isValid: false, error: "Password must contain at least one special character (!@#$%^&* etc.)" };
+    return { isValid: false, error: "Password must contain at least one special character (!@#$%^&* etc.)", cleanValue: null };
   }
 
   // Check for common patterns
   if (/(password|123456|qwerty|admin|welcome)/i.test(password)) {
-    return { isValid: false, error: "Password is too common. Please choose a stronger one" };
+    return { isValid: false, error: "Password is too common. Please choose a stronger one", cleanValue: null };
   }
 
   // Check for sequential characters
@@ -183,28 +194,28 @@ export const validatePassword = (password, options = {}) => {
       password
     )
   ) {
-    return { isValid: false, error: "Password contains sequential characters" };
+    return { isValid: false, error: "Password contains sequential characters", cleanValue: null };
   }
 
   // Check for repeating characters
   if (/(.)\1{2,}/.test(password)) {
-    return { isValid: false, error: "Password contains repeating characters" };
+    return { isValid: false, error: "Password contains repeating characters", cleanValue: null };
   }
 
   // Check for personal information
   if (personalInfo.name) {
     const firstName = personalInfo.name.toLowerCase().split(' ')[0];
     if (firstName && password.toLowerCase().includes(firstName)) {
-      return { isValid: false, error: "Password should not contain your name" };
+      return { isValid: false, error: "Password should not contain your name", cleanValue: null };
     }
   }
 
   if (personalInfo.email) {
     const emailLocal = personalInfo.email.split('@')[0].toLowerCase();
     if (emailLocal && password.toLowerCase().includes(emailLocal)) {
-      return { isValid: false, error: "Password should not contain your email" };
+      return { isValid: false, error: "Password should not contain your email", cleanValue: null };
     }
   }
 
-  return { isValid: true };
+  return { isValid: true, cleanValue: password };
 };

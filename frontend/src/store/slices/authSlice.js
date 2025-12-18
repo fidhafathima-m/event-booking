@@ -20,11 +20,12 @@ export const verifyOTP = createAsyncThunk(
   async (otpData, { rejectWithValue }) => {
     try {
       const response = await api.post("/auth/verify-otp", otpData);
-      const { token } = response.data.data;
-      
-      // Store token in localStorage
-      localStorage.setItem("token", token);
-      
+      const { accessToken, refreshToken } = response.data.data;
+
+      // Store tokens in localStorage
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || "OTP verification failed");
@@ -52,20 +53,21 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await api.post("/auth/login", userData);
-      const { token } = response.data.data;
-      
+      const { accessToken, refreshToken } = response.data.data;
+
       toast.success("Login successful!");
-      
+
       // Store token in localStorage
-      localStorage.setItem("token", token);
-      
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Login failed";
       toast.error(errorMessage);
-      return rejectWithValue({ 
+      return rejectWithValue({
         message: errorMessage,
-        error: error.response?.data 
+        error: error.response?.data,
       });
     }
   }
@@ -98,9 +100,12 @@ export const updateProfile = createAsyncThunk(
 
 export const logoutUser = createAsyncThunk(
   "auth/logout",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      await api.post("/auth/logout");
+      const refreshToken = getState().auth.refreshToken;
+      if (refreshToken) {
+        await api.post("/auth/logout", { refreshToken });
+      }
       toast.success("Logged out successfully");
     } catch (error) {
       toast.error(error.response?.data?.message || "Logout failed");
@@ -109,11 +114,45 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+export const refreshTokens = createAsyncThunk(
+  "auth/refreshTokens",
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const state = getState().auth;
+      const refreshToken = state.refreshToken;
+      
+      // Add check for existing refresh operation
+      if (state.isRefreshing) {
+        return rejectWithValue({ message: "Refresh already in progress" });
+      }
+      
+      const response = await api.post("/auth/refresh-token", { refreshToken });
+      
+      const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+      
+      // Store new tokens in localStorage
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", newRefreshToken);
+      
+      return response.data;
+    } catch (error) {
+      // If refresh fails, logout
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      window.location.href = '/login';
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
 const initialState = {
   user: null,
   tempUser: null,
-  token: localStorage.getItem("token"),
+  accessToken: localStorage.getItem("accessToken"),
+  refreshToken: localStorage.getItem("refreshToken"),
   isLoading: false,
+  isRefreshing: false,
   isSuccess: false,
   isError: false,
   errorMessage: "",
@@ -131,7 +170,8 @@ const authSlice = createSlice({
     },
     setCredentials: (state, action) => {
       state.user = action.payload.user;
-      state.token = action.payload.token;
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
     },
     clearTempUser: (state) => {
       state.tempUser = null;
@@ -161,7 +201,8 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
+        state.accessToken = action.payload.data.accessToken;
+        state.refreshToken = action.payload.data.refreshToken;
         state.tempUser = null;
       })
       .addCase(verifyOTP.rejected, (state, action) => {
@@ -189,7 +230,8 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
+        state.accessToken = action.payload.data.accessToken;
+        state.refreshToken = action.payload.data.refreshToken;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -208,15 +250,41 @@ const authSlice = createSlice({
       .addCase(getProfile.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
-        state.errorMessage =
-          action.payload?.message || "Failed to load profile";
+        state.errorMessage = action.payload?.message || "Failed to load profile";
+      })
+      // Refresh Tokens
+      .addCase(refreshTokens.pending, (state) => {
+        state.isRefreshing = true;
+      })
+      .addCase(refreshTokens.fulfilled, (state, action) => {
+        state.isRefreshing = false;
+        state.accessToken = action.payload.data.accessToken;
+        state.refreshToken = action.payload.data.refreshToken;
+      })
+      .addCase(refreshTokens.rejected, (state, action) => {
+        state.isRefreshing = false;
+        state.isError = true;
+        state.errorMessage = action.payload?.message || "Failed to refresh tokens";
       })
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
-        state.token = null;
+        state.accessToken = null;
+        state.refreshToken = null;
         state.tempUser = null;
-        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        // Still clear local state even if API call fails
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
+        state.tempUser = null;
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
       });
   },
 });

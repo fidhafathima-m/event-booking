@@ -2,11 +2,11 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { user, token } = useSelector((state) => state.auth);
+  const { user, accessToken } = useSelector((state) => state.auth);
   const location = useLocation();
   
   // If no token, redirect to login
-  if (!token) {
+  if (!accessToken) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
